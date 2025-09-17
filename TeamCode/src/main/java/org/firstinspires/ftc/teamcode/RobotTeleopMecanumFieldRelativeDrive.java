@@ -26,16 +26,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
  * that the robot drives the direction you push the joystick regardless of the current orientation
@@ -50,8 +52,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  *
  */
-@TeleOp(name = "Robot: Field Relative Mecanum Drive", group = "Robot")
-@Disabled
+@TeleOp(name = "Decode Teleop", group = "Robot")
 public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     // This declares the four motors needed
     DcMotor frontLeftDrive;
@@ -62,31 +63,50 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
+    DcMotor rightShooterWheel;
+    DcMotor leftShooterWheel;
+
+    Servo triggerServo;
     @Override
     public void init() {
+        rightShooterWheel = hardwareMap.get(DcMotor.class, "right shooter wheel");
+        rightShooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftShooterWheel = hardwareMap.get(DcMotor.class, "left shooter wheel");
+        leftShooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        triggerServo = hardwareMap.get (Servo.class, "trigger");
+        triggerServo.setPosition(0.25);
+        telemetry.addLine("Hello world!!!");
+        telemetry.update();
+
         frontLeftDrive = hardwareMap.get(DcMotor.class, "FL Drive");
         frontRightDrive = hardwareMap.get(DcMotor.class, "FR Drive");
         backLeftDrive = hardwareMap.get(DcMotor.class, "BL Drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "BR Drive");
 
-        // We set the left motors in reverse which is needed for drive trains where the left
-        // motors are opposite to the right ones.
+//         We set the left motors in reverse which is needed for drive trains where the left
+//         motors are opposite to the right ones.
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
 
-        // This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
-        // wires, you should remove these
+//         This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
+//         wires, you should remove these
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+
 
         imu = hardwareMap.get(IMU.class, "imu");
         // This needs to be changed to match the orientation on your robot
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.UP;
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
 
         RevHubOrientationOnRobot orientationOnRobot = new
                 RevHubOrientationOnRobot(logoDirection, usbDirection);
@@ -95,6 +115,24 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
     @Override
     public void loop() {
+
+        // Basic driving logic
+        if (gamepad2.cross) {
+            rightShooterWheel.setPower(0.05);
+            leftShooterWheel.setPower(0.05);
+        } else {
+            rightShooterWheel.setPower(0);
+            leftShooterWheel.setPower(0);
+
+            //testServo.setPosition(0.5);
+        }
+        if (gamepad2.circle) {
+            triggerServo.setPosition(0.75);
+        } else {
+            triggerServo.setPosition(0.25);
+        }
+
+
         telemetry.addLine("Press A to reset Yaw");
         telemetry.addLine("Hold left bumper to drive in robot relative");
         telemetry.addLine("The left joystick sets the robot direction");
