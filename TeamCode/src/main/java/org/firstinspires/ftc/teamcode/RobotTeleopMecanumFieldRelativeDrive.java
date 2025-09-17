@@ -28,6 +28,7 @@
  */
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -52,8 +53,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  *
  */
+@Config
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
+    public static double SHOOTER_SPEED = 0.05;
+
     // This declares the four motors needed
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -118,8 +122,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
         // Basic driving logic
         if (gamepad2.cross) {
-            rightShooterWheel.setPower(0.05);
-            leftShooterWheel.setPower(0.05);
+            rightShooterWheel.setPower(SHOOTER_SPEED);
+            leftShooterWheel.setPower(SHOOTER_SPEED);
         } else {
             rightShooterWheel.setPower(0);
             leftShooterWheel.setPower(0);
