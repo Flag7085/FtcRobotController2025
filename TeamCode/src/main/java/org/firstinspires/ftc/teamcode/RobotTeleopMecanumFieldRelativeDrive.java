@@ -33,6 +33,7 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -56,7 +57,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 @Config
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
-    public static double SHOOTER_SPEED = 0.05;
+    public static double SHOOTER_SPEED = 0.5;
 
     // This declares the four motors needed
     DcMotor frontLeftDrive;
@@ -67,18 +68,18 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
-    DcMotor rightShooterWheel;
-    DcMotor leftShooterWheel;
+    DcMotorEx rightShooterWheel;
+    DcMotorEx leftShooterWheel;
 
     Servo triggerServo;
     @Override
     public void init() {
-        rightShooterWheel = hardwareMap.get(DcMotor.class, "right shooter wheel");
-        rightShooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
+        rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
         rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftShooterWheel = hardwareMap.get(DcMotor.class, "left shooter wheel");
-        leftShooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftShooterWheel = hardwareMap.get(DcMotorEx.class, "left shooter wheel");
+        leftShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
         leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         triggerServo = hardwareMap.get (Servo.class, "trigger");
@@ -120,6 +121,17 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     @Override
     public void loop() {
 
+        telemetry.addLine(String.format("Motor max RPMs L: %f, R: %f",
+                leftShooterWheel.getMotorType().getMaxRPM(),
+                rightShooterWheel.getMotorType().getMaxRPM()));
+        telemetry.addLine(String.format("Motor power: %f / %f",
+                leftShooterWheel.getMotorType().getAchieveableMaxRPMFraction(),
+                rightShooterWheel.getMotorType().getAchieveableMaxRPMFraction()));
+        telemetry.addData("Left power", leftShooterWheel.getPower());
+        telemetry.addData("Right power", rightShooterWheel.getPower());
+
+        // TODO - set and read angular velocity
+
         // Basic driving logic
         if (gamepad2.cross) {
             rightShooterWheel.setPower(SHOOTER_SPEED);
@@ -127,7 +139,6 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         } else {
             rightShooterWheel.setPower(0);
             leftShooterWheel.setPower(0);
-
             //testServo.setPosition(0.5);
         }
         if (gamepad2.circle) {
@@ -137,14 +148,14 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         }
 
 
-        telemetry.addLine("Press A to reset Yaw");
+        telemetry.addLine("Press triangle to reset Yaw");
         telemetry.addLine("Hold left bumper to drive in robot relative");
         telemetry.addLine("The left joystick sets the robot direction");
         telemetry.addLine("Moving the right joystick left and right turns the robot");
 
         // If you press the A button, then you reset the Yaw to be zero from the way
         // the robot is currently pointing
-        if (gamepad1.a) {
+        if (gamepad1.triangle) {
             imu.resetYaw();
         }
         // If you press the left bumper, you get a drive from the point of view of the robot
