@@ -29,6 +29,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -39,6 +40,10 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+
+import java.util.Locale;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -64,6 +69,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     DcMotor frontRightDrive;
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
+
+   GoBildaPinpointDriver pinpoint;
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
@@ -92,6 +99,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         backLeftDrive = hardwareMap.get(DcMotor.class, "BL Drive");
         backRightDrive = hardwareMap.get(DcMotor.class, "BR Drive");
 
+        pinpoint = getPinpoint();
 //         We set the left motors in reverse which is needed for drive trains where the left
 //         motors are opposite to the right ones.
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -130,6 +138,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         telemetry.addData("Left power", leftShooterWheel.getPower());
         telemetry.addData("Right power", rightShooterWheel.getPower());
 
+        updatePinpoint();
+
         // TODO - set and read angular velocity
 
         // Basic driving logic
@@ -157,6 +167,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         // the robot is currently pointing
         if (gamepad1.triangle) {
             imu.resetYaw();
+            pinpoint.resetPosAndIMU();
         }
         // If you press the left bumper, you get a drive from the point of view of the robot
         // (much like driving an RC vehicle)
@@ -164,6 +175,39 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
             drive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
         } else {
             driveFieldRelative(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        }
+    }
+
+    public GoBildaPinpointDriver.EncoderDirection pinpointDirectionX() {
+        return GoBildaPinpointDriver.EncoderDirection.FORWARD;
+
+    }
+    public GoBildaPinpointDriver.EncoderDirection getPinpointDirectionY() {
+        return GoBildaPinpointDriver.EncoderDirection.FORWARD;
+    }
+
+
+    public GoBildaPinpointDriver getPinpoint() {
+        GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.setOffsets(-4.0, -4.0, DistanceUnit.INCH);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        pinpoint.setEncoderDirections(pinpointDirectionX(), getPinpointDirectionY());
+        pinpoint.resetPosAndIMU();
+        return pinpoint;
+    }
+
+    private void updatePinpoint () {
+        pinpoint.update();
+        if (pinpoint.getDeviceStatus() == GoBildaPinpointDriver.DeviceStatus.READY) {
+            Pose2D pose = pinpoint.getPosition();
+            telemetry.addLine(String.format(Locale.US,
+                    "Pinpoint pose: (%2.1fin, %2.1fin, %3.1fdeg)",
+                    pose.getX(DistanceUnit.INCH),
+                    pose.getY(DistanceUnit.INCH),
+                    pose.getHeading(AngleUnit.DEGREES)
+                    ));
+        } else {
+            telemetry.addLine("Pinpoint not ready");
         }
     }
 
