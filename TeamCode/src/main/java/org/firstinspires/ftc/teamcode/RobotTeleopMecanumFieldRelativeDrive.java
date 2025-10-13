@@ -105,7 +105,18 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
 
-    GoBildaPinpointDriver pinpoint;
+    /**
+     * The variable to store our instance of the AprilTag processor.
+     */
+    private AprilTagProcessor aprilTag;
+
+    public static int  DECIMATION = 3;
+
+    /**
+     * The variable to store our instance of the vision portal.
+     */
+    private VisionPortal visionPortal;
+   GoBildaPinpointDriver pinpoint;
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
@@ -413,7 +424,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second (default)
         // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second (default)
         // Note: Decimation can be changed on-the-fly to adapt during a match.
-        //aprilTag.setDecimation(3);
+        aprilTag.setDecimation(DECIMATION);
 
         // Create the vision portal by using a builder.
         VisionPortal.Builder builder = new VisionPortal.Builder();
