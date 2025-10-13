@@ -74,6 +74,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public static double SHOOTER_SPEED = 0.5;
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
+
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
@@ -90,6 +91,10 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
     double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
+    /**
+     * The variable to store our instance of the AprilTag processor.
+     */
+    private AprilTagProcessor aprilTag;
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
     private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
 
@@ -126,13 +131,17 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
         rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         leftShooterWheel = hardwareMap.get(DcMotorEx.class, "left shooter wheel");
         leftShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
         leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         triggerServo = hardwareMap.get (Servo.class, "trigger");
         triggerServo.setPosition(0.25);
-        telemetry.addLine("Hello world!!!");
+
+        telemetry.addLine("Who Can Do It??");
+        telemetry.addLine("We Can Do It!!!");
         telemetry.update();
 
         frontLeftDrive = hardwareMap.get(DcMotor.class, "FL Drive");
@@ -160,6 +169,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
         double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
+        // Initialize the Apriltag Detection process
         initAprilTag();
 
         // Wait for the DS start button to be touched.
@@ -227,26 +237,39 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
         // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
         if (gamepad1.left_bumper && targetFound) {
+            // Determine heading, range, and yaw (tag image rotation) error.
+            double rangeError = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
+            double headingError = desiredTag.ftcPose.bearing;
+            double yawError = desiredTag.ftcPose.yaw;
 
-            // Determine heading, range and Yaw (tag image rotation) error so we can use them to control the robot automatically.
-            double  rangeError      = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-            double  headingError    = desiredTag.ftcPose.bearing;
-            double  yawError        = desiredTag.ftcPose.yaw;
+            // Define thresholds for being "aligned."
+            final double RANGE_THRESHOLD = 1.0; // Close enough to the AprilTag (inches)
+            final double BEARING_THRESHOLD = 5.0; // Angled towards the tag (degrees)
+            final double YAW_THRESHOLD = 5.0; // Squared up to tag (degrees)
 
-            // Use the speed and turn "gains" to calculate how we want the robot to move.
-            drive  = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-            turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
-            strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
-
-            telemetry.addData("Auto","Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+            // Check if the robot is aligned within thresholds.
+            if (Math.abs(rangeError) < RANGE_THRESHOLD &&
+                    Math.abs(headingError) < BEARING_THRESHOLD &&
+                    Math.abs(yawError) < YAW_THRESHOLD) {
+                drive = 0;
+                strafe = 0;
+                turn = 0;
+                telemetry.addData("Auto", "Robot aligned with AprilTag!");
+            } else {
+                // Use speed and turn "gains" to calculate robot movement.
+                drive  = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+                strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
+                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+            }
         } else {
-
-            // drive using manual POV Joystick mode.  Slow things down to make the robot more controlable.
-            drive  = -gamepad1.left_stick_y  / 2.0;  // Reduce drive rate to 50%.
-            strafe = -gamepad1.left_stick_x  / 2.0;  // Reduce strafe rate to 50%.
-            turn   = -gamepad1.right_stick_x / 3.0;  // Reduce turn rate to 33%.
-            telemetry.addData("Manual","Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+            // Manual control section
+            drive  = -gamepad1.left_stick_y  / 2.0;
+            strafe = -gamepad1.left_stick_x  / 2.0;
+            turn   = -gamepad1.right_stick_x / 3.0;
+            telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
         }
+
         telemetry.update();
 
         // Apply desired axes motions to the drivetrain.
@@ -298,7 +321,6 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public GoBildaPinpointDriver.EncoderDirection getPinpointDirectionY() {
         return GoBildaPinpointDriver.EncoderDirection.FORWARD;
     }
-
 
     public GoBildaPinpointDriver getPinpoint() {
         GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -432,7 +454,10 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         builder.addProcessor(aprilTag);
 
         // Build the Vision Portal, using the above settings.
-        visionPortal = builder.build();
+        /**
+         * The variable to store our instance of the vision portal.
+         */
+        VisionPortal visionPortal = builder.build();
 
         // Disable or re-enable the aprilTag processor at any time.
         //visionPortal.setProcessorEnabled(aprilTag, true);
