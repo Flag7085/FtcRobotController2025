@@ -87,7 +87,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     final double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
 
     boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-    double  drive           = 0;        // Desired forward power/speed (-1 to +1)
+    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
     double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
     double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
@@ -125,6 +125,10 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     DcMotorEx leftShooterWheel;
 
     Servo triggerServo;
+
+    MecanumDrive drive;  // Add Roadrunner drive object
+
+
     @Override
     public void init() {
         rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
@@ -165,7 +169,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-        double  drive           = 0;        // Desired forward power/speed (-1 to +1)
+        double  driveSpeed      = 0;        // Desired forward power/speed (-1 to +1)
         double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
         double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
@@ -187,6 +191,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         RevHubOrientationOnRobot orientationOnRobot = new
                 RevHubOrientationOnRobot(logoDirection, usbDirection);
         imu.initialize(new IMU.Parameters(orientationOnRobot));
+
+        drive = new MecanumDrive(hardwareMap, imu);
     }
 
     @Override
@@ -235,6 +241,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
             telemetry.addData("\n>","Drive using joysticks to find valid target\n");
         }
 
+        double driveSpeed, strafe, turn;
+
         // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
         if (gamepad1.left_bumper && targetFound) {
             // Determine heading, range, and yaw (tag image rotation) error.
@@ -251,34 +259,41 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
             if (Math.abs(rangeError) < RANGE_THRESHOLD &&
                     Math.abs(headingError) < BEARING_THRESHOLD &&
                     Math.abs(yawError) < YAW_THRESHOLD) {
-                drive = 0;
+                driveSpeed = 0;
                 strafe = 0;
                 turn = 0;
                 telemetry.addData("Auto", "Robot aligned with AprilTag!");
             } else {
                 // Use speed and turn "gains" to calculate robot movement.
-                drive  = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                driveSpeed = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
                 turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
                 strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
-                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
             }
         } else {
             // Manual control section
-            drive  = -gamepad1.left_stick_y  / 2.0;
+            driveSpeed = -gamepad1.left_stick_y  / 2.0;
             strafe = -gamepad1.left_stick_x  / 2.0;
             turn   = -gamepad1.right_stick_x / 3.0;
-            telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", drive, strafe, turn);
+            telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
         telemetry.update();
 
-        // Apply desired axes motions to the drivetrain.
-        drive(drive, strafe, turn);
-     //   sleep(10);
+        // Replace manual drive(...) call with Roadrunner control
+        // Use setWeightedDrivePower and update for holo drive and localization
+        drive.setWeightedDrivePower(new Pose2d(driveSpeed, strafe, turn));
+        drive.update();
+
+        Pose2d poseEstimate = drive.getPoseEstimate();
+        telemetry.addData("x", poseEstimate.getX());
+        telemetry.addData("y", poseEstimate.getY());
+        telemetry.addData("heading", Math.toDegrees(poseEstimate.getHeading()));
+
 
         telemetryAprilTag();
 
-        // Basic driving logic
+        // Basic shooting logic
         if (gamepad2.cross) {
             rightShooterWheel.setPower(SHOOTER_SPEED);
             leftShooterWheel.setPower(SHOOTER_SPEED);
