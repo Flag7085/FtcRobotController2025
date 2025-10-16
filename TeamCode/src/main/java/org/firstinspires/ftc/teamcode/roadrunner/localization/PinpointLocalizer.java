@@ -16,53 +16,45 @@ import java.util.Objects;
 @Config
 public final class PinpointLocalizer implements Localizer {
     public static class Params {
-        public double parYTicks = 0.0; // y position of the parallel encoder (in tick units)
-        public double perpXTicks = 0.0; // x position of the perpendicular encoder (in tick units)
+        // How far sideways (in inches) from the tracking point is the X (forward) odometry pod?
+        // Left is positive, right is negative
+        public double xPodOffset = -4.0;
+
+        // How far forward (in inches) from the tracking point is the Y (strafe) odometry pod?
+        // Forward is positive, back is negative
+        public double yPodOffset = -4.0;
+
+        public GoBildaPinpointDriver.GoBildaOdometryPods odometryPodType =
+                GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD;
+
+        // Direction of the X (forward) encoder
+        public GoBildaPinpointDriver.EncoderDirection xEncoderDirection =
+                GoBildaPinpointDriver.EncoderDirection.FORWARD;
+        // Direction of the Y (strafe) encoder
+        public GoBildaPinpointDriver.EncoderDirection yEncoderDirection =
+                GoBildaPinpointDriver.EncoderDirection.FORWARD;
     }
 
     public static Params PARAMS = new Params();
 
     public final GoBildaPinpointDriver driver;
+
+    // Even though we don't use these internally, they still need to be set so that
+    // they can be used by the TuningOpModes class.
     public final GoBildaPinpointDriver.EncoderDirection initialParDirection, initialPerpDirection;
 
     private Pose2d txWorldPinpoint;
     private Pose2d txPinpointRobot = new Pose2d(0, 0, 0);
 
     public PinpointLocalizer(HardwareMap hardwareMap, Pose2d initialPose) {
-        // TODO: make sure your config has a Pinpoint device with this name
-        //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         driver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-
-        driver.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
-        driver.setOffsets(-4.0, -4.0, DistanceUnit.INCH);
-
-        // TODO: reverse encoder directions if needed
-        initialParDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-        initialPerpDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-
-        driver.setEncoderDirections(initialParDirection, initialPerpDirection);
-
+        driver.setEncoderResolution(PARAMS.odometryPodType);
+        driver.setOffsets(PARAMS.xPodOffset, PARAMS.yPodOffset, DistanceUnit.INCH);
+        driver.setEncoderDirections(PARAMS.xEncoderDirection, PARAMS.yEncoderDirection);
         driver.resetPosAndIMU();
 
-        txWorldPinpoint = initialPose;
-    }
-
-    public PinpointLocalizer(HardwareMap hardwareMap, double inPerTick, Pose2d initialPose) {
-        // TODO: make sure your config has a Pinpoint device with this name
-        //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        driver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-
-        double mmPerTick = inPerTick * 25.4;
-        driver.setEncoderResolution(1 / mmPerTick, DistanceUnit.MM);
-        driver.setOffsets(mmPerTick * PARAMS.parYTicks, mmPerTick * PARAMS.perpXTicks, DistanceUnit.MM);
-
-        // TODO: reverse encoder directions if needed
-        initialParDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-        initialPerpDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
-
-        driver.setEncoderDirections(initialParDirection, initialPerpDirection);
-
-        driver.resetPosAndIMU();
+        initialParDirection = PARAMS.xEncoderDirection;
+        initialPerpDirection = PARAMS.yEncoderDirection;
 
         txWorldPinpoint = initialPose;
     }
