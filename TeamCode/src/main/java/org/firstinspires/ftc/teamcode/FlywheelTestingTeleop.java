@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 @TeleOp(name = "Flywheel Testing")
 @Config
 public class FlywheelTestingTeleop extends OpMode {
-    public static final double SECONDS_PER_MINUTE = 60;
+    private static final double SECONDS_PER_MINUTE = 60;
     public static double FLYWHEEL_SPEED = 0.5;
 
     public static double TICKS_PER_REVOLUTION = 28;

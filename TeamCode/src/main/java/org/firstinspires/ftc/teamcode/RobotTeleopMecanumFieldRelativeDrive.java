@@ -28,6 +28,8 @@
  */
 package org.firstinspires.ftc.teamcode;
 
+import android.annotation.SuppressLint;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -35,7 +37,6 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -45,18 +46,14 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
-import java.util.Locale;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -72,50 +69,47 @@ import java.util.Locale;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  *
  */
+@SuppressLint("DefaultLocale")
 @Config
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public static double SHOOTER_SPEED = 0.5;
-    private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
-    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
+    public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    final double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
-    final double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    public static  double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    public static  double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
+    public static  double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
-    final double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
-    final double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
-    final double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
+    public static  double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
+    public static  double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
+    public static  double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
 
-    boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
-    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
-    double  turn            = 0;        // Desired turning power/speed (-1 to +1)
+//    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
+//    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
+//    double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
     /**
      * The variable to store our instance of the AprilTag processor.
      */
     private AprilTagProcessor aprilTag;
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
-    private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
 
+//    // This declares the four motors needed
+//    DcMotor frontLeftDrive;
+//    DcMotor frontRightDrive;
+//    DcMotor backLeftDrive;
+//    DcMotor backRightDrive;
 
-    // This declares the four motors needed
-    DcMotor frontLeftDrive;
-    DcMotor frontRightDrive;
-    DcMotor backLeftDrive;
-    DcMotor backRightDrive;
-
+    // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
 
     /**
      * The variable to store our instance of the vision portal.
      */
     private VisionPortal visionPortal;
-   GoBildaPinpointDriver pinpoint;
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
@@ -130,6 +124,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
     @Override
     public void init() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
         rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -145,53 +141,34 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
-        telemetry.update();
 
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "FL Drive");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "FR Drive");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "BL Drive");
-        backRightDrive = hardwareMap.get(DcMotor.class, "BR Drive");
-
-        pinpoint = getPinpoint();
-//         We set the left motors in reverse which is needed for drive trains where the left
-//         motors are opposite to the right ones.
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-
-//         This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
-//         wires, you should remove these
-        frontLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        backRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-
-        boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-        double  driveSpeed      = 0;        // Desired forward power/speed (-1 to +1)
-        double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
-        double  turn            = 0;        // Desired turning power/speed (-1 to +1)
+//        frontLeftDrive = hardwareMap.get(DcMotor.class, "FL Drive");
+//        frontRightDrive = hardwareMap.get(DcMotor.class, "FR Drive");
+//        backLeftDrive = hardwareMap.get(DcMotor.class, "BL Drive");
+//        backRightDrive = hardwareMap.get(DcMotor.class, "BR Drive");
+//
+////         We set the left motors in reverse which is needed for drive trains where the left
+////         motors are opposite to the right ones.
+//        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+//        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+//
+////         This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
+////         wires, you should remove these
+//        frontLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        frontRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        backRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Initialize the Apriltag Detection process
         initAprilTag();
+        FtcDashboard.getInstance().startCameraStream(visionPortal, 10);
 
         // Wait for the DS start button to be touched.
         telemetry.addData("DS preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start OpMode");
 
-
-        imu = hardwareMap.get(IMU.class, "imu");
-        // This needs to be changed to match the orientation on your robot
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
-        RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
-
-        RevHubOrientationOnRobot orientationOnRobot = new
-                RevHubOrientationOnRobot(logoDirection, usbDirection);
-        imu.initialize(new IMU.Parameters(orientationOnRobot));
-
         drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
+        imu = drive.lazyImu.get();
     }
 
     @Override
@@ -205,37 +182,22 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         telemetry.addData("Left power", leftShooterWheel.getPower());
         telemetry.addData("Right power", rightShooterWheel.getPower());
 
-        updatePinpoint();
+        PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
+        writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
         // TODO - set and read angular velocity
 
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        for (AprilTagDetection detection : currentDetections) {
-            // Look to see if we have size info on this tag.
-            if (detection.metadata != null) {
-                //  Check to see if we want to track towards this tag.
-                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
-                    // Yes, we want to use this tag.
-                    targetFound = true;
-                    desiredTag = detection;
-                    break;  // don't look any further.
-                } else {
-                    // This tag is in the library, but we do not want to track it right now.
-                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
-                }
-            } else {
-                // This tag is NOT in the library, so we don't have enough information to track to it.
-                telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
-            }
-        }
+        telemetryAprilTag(currentDetections);
+        AprilTagDetection goalTag = getGoalTag(currentDetections);
 
         // Tell the driver what we see, and what to do.
-        if (targetFound) {
+        if (goalTag != null) {
             telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
-            telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
-            telemetry.addData("Range",  "%5.1f inches", desiredTag.ftcPose.range);
-            telemetry.addData("Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
-            telemetry.addData("Yaw","%3.0f degrees", desiredTag.ftcPose.yaw);
+            telemetry.addData("Found", "ID %d (%s)", goalTag.id, goalTag.metadata.name);
+            telemetry.addData("Range",  "%5.1f inches", goalTag.ftcPose.range);
+            telemetry.addData("Bearing","%3.0f degrees", goalTag.ftcPose.bearing);
+            telemetry.addData("Yaw","%3.0f degrees", goalTag.ftcPose.yaw);
         } else {
             telemetry.addData("\n>","Drive using joysticks to find valid target\n");
         }
@@ -243,11 +205,11 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         double driveSpeed, strafe, turn;
 
         // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
-        if (gamepad1.left_bumper && targetFound) {
+        if (gamepad1.left_bumper && goalTag != null) {
             // Determine heading, range, and yaw (tag image rotation) error.
-            double rangeError = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-            double headingError = desiredTag.ftcPose.bearing;
-            double yawError = desiredTag.ftcPose.yaw;
+            double rangeError = (goalTag.ftcPose.range - DESIRED_DISTANCE);
+            double headingError = goalTag.ftcPose.bearing;
+            double yawError = goalTag.ftcPose.yaw;
 
             // Define thresholds for being "aligned."
             final double RANGE_THRESHOLD = 1.0; // Close enough to the AprilTag (inches)
@@ -271,26 +233,11 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
             }
         } else {
             // Manual control section
-            driveSpeed = -gamepad1.left_stick_y  / 2.0;
+            driveSpeed = -gamepad1.left_stick_y / 2.0;
             strafe = -gamepad1.left_stick_x  / 2.0;
             turn   = -gamepad1.right_stick_x / 3.0;
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
-
-        telemetry.update();
-
-        // Replace manual drive(...) call with Roadrunner control
-        // Use setWeightedDrivePower and update for holo drive and localization
-       drive.setDrivePowers(new PoseVelocity2d(new Vector2d(driveSpeed, strafe), Math.toRadians(turn)));
-        drive.updatePoseEstimate();
-
-        Pose2d poseEstimate = drive.localizer.getPose();
-        telemetry.addData("x", poseEstimate.position.x);
-        telemetry.addData("y", poseEstimate.position.y);
-        telemetry.addData("heading", Math.toDegrees(poseEstimate.heading.toDouble()));
-
-
-        telemetryAprilTag();
 
         // Basic shooting logic
         if (gamepad2.cross) {
@@ -317,7 +264,8 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         // the robot is currently pointing
         if (gamepad1.triangle) {
             imu.resetYaw();
-            pinpoint.resetPosAndIMU();
+            Pose2d currentPose = drive.localizer.getPose();
+            drive.localizer.setPose(new Pose2d(0, 0, 0.0));
         }
         // If you press the left bumper, you get a drive from the point of view of the robot
         // (much like driving an RC vehicle)
@@ -345,19 +293,23 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         return pinpoint;
     }
 
-    private void updatePinpoint () {
-        pinpoint.update();
-        if (pinpoint.getDeviceStatus() == GoBildaPinpointDriver.DeviceStatus.READY) {
-            Pose2D pose = pinpoint.getPosition();
-            telemetry.addLine(String.format(Locale.US,
-                    "Pinpoint pose: (%2.1fin, %2.1fin, %3.1fdeg)",
-                    pose.getX(DistanceUnit.INCH),
-                    pose.getY(DistanceUnit.INCH),
-                    pose.getHeading(AngleUnit.DEGREES)
-                    ));
-        } else {
-            telemetry.addLine("Pinpoint not ready");
-        }
+    private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
+        telemetry.addLine(
+                String.format(
+                    "Robot pose: (%2.1fin, %2.1fin, %3.1fdeg)",
+                    pose.position.x,
+                    pose.position.y,
+                    Math.toDegrees(pose.heading.toDouble())
+                )
+        );
+        telemetry.addLine(
+                String.format(
+                        "Robot Velocity: (%2.1fin/sec, %2.1fin/sec, %3.1fdeg/sec)",
+                        velocity.linearVel.x,
+                        velocity.linearVel.y,
+                        Math.toDegrees(velocity.angVel)
+                )
+        );
     }
 
     // This routine drives the robot field relative
@@ -367,8 +319,9 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         double r = Math.hypot(right, forward);
 
         // Second, rotate angle by the angle the robot is pointing
-        theta = AngleUnit.normalizeRadians(theta -
-                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
+        theta = drive.localizer.getPose().heading.toDouble();
+//        theta = AngleUnit.normalizeRadians(theta -
+//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
@@ -380,31 +333,35 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
     // Thanks to FTC16072 for sharing this code!!
     public void drive(double forward, double right, double rotate) {
-        // This calculates the power needed for each wheel based on the amount of forward,
-        // strafe right, and rotate
-        double frontLeftPower = forward + right + rotate;
-        double frontRightPower = forward - right - rotate;
-        double backRightPower = forward + right - rotate;
-        double backLeftPower = forward - right + rotate;
+        // Replace manual drive(...) call with Roadrunner control
+        // Use setWeightedDrivePower and update for holo drive and localization
+        drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, right), Math.toRadians(rotate)));
 
-        double maxPower = 1.0;
-        double maxSpeed = 1.0;  // make this slower for outreaches
-
-        // This is needed to make sure we don't pass > 1.0 to any wheel
-        // It allows us to keep all of the motors in proportion to what they should
-        // be and not get clipped
-        maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
-        maxPower = Math.max(maxPower, Math.abs(frontRightPower));
-        maxPower = Math.max(maxPower, Math.abs(backRightPower));
-        maxPower = Math.max(maxPower, Math.abs(backLeftPower));
-
-        // We multiply by maxSpeed so that it can be set lower for outreaches
-        // When a young child is driving the robot, we may not want to allow full
-        // speed.
-        frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
-        frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
-        backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
-        backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
+//        // This calculates the power needed for each wheel based on the amount of forward,
+//        // strafe right, and rotate
+//        double frontLeftPower = forward + right + rotate;
+//        double frontRightPower = forward - right - rotate;
+//        double backRightPower = forward + right - rotate;
+//        double backLeftPower = forward - right + rotate;
+//
+//        double maxPower = 1.0;
+//        double maxSpeed = 1.0;  // make this slower for outreaches
+//
+//        // This is needed to make sure we don't pass > 1.0 to any wheel
+//        // It allows us to keep all of the motors in proportion to what they should
+//        // be and not get clipped
+//        maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
+//        maxPower = Math.max(maxPower, Math.abs(frontRightPower));
+//        maxPower = Math.max(maxPower, Math.abs(backRightPower));
+//        maxPower = Math.max(maxPower, Math.abs(backLeftPower));
+//
+//        // We multiply by maxSpeed so that it can be set lower for outreaches
+//        // When a young child is driving the robot, we may not want to allow full
+//        // speed.
+//        frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
+//        frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
+//        backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
+//        backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
     }
 
     /**
@@ -443,18 +400,14 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         // Create the vision portal by using a builder.
         VisionPortal.Builder builder = new VisionPortal.Builder();
 
-        // Set the camera (webcam vs. built-in RC phone camera).
-        if (USE_WEBCAM) {
-            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
-        } else {
-            builder.setCamera(BuiltinCameraDirection.BACK);
-        }
+        // Set the camera
+        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
 
         // Choose a camera resolution. Not all cameras support all resolutions.
         //builder.setCameraResolution(new Size(640, 480));
 
         // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
-        //builder.enableLiveView(true);
+        builder.enableLiveView(true);
 
         // Set the stream format; MJPEG uses less bandwidth than default YUY2.
         //builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
@@ -464,24 +417,36 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         // If set "false", monitor shows camera view without annotations.
         //builder.setAutoStopLiveView(false);
 
-        // Set and enable the processor.
+        // Set and enable the processor and build the vision portal
         builder.addProcessor(aprilTag);
-
-        // Build the Vision Portal, using the above settings.
-        /**
-         * The variable to store our instance of the vision portal.
-         */
-        VisionPortal visionPortal = builder.build();
+        visionPortal = builder.build();
 
         // Disable or re-enable the aprilTag processor at any time.
         //visionPortal.setProcessorEnabled(aprilTag, true);
 
     }   // end method initAprilTag()
 
+    private AprilTagDetection getGoalTag(List<AprilTagDetection> detections) {
+        for (AprilTagDetection detection : detections) {
+            // Look to see if we have size info on this tag.
+            if (detection.metadata != null) {
+                //  Check to see if we want to track towards this tag.
+                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
+                    // Yes, we want to use this tag.
+                    return detection;
+                } else {
+                    // This tag is in the library, but we do not want to track it right now.
+                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                }
+            } else {
+                // This tag is NOT in the library, so we don't have enough information to track to it.
+                telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+            }
+        }
+        return null;
+    }
 
-    private void telemetryAprilTag() {
-
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+    private void telemetryAprilTag(List<AprilTagDetection> currentDetections) {
         telemetry.addData("# AprilTags Detected", currentDetections.size());
 
         // Step through the list of detections and display info for each one.
