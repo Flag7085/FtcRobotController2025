@@ -31,6 +31,10 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.PoseVelocity2dDual;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -104,11 +108,6 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     DcMotor frontRightDrive;
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
-
-    /**
-     * The variable to store our instance of the AprilTag processor.
-     */
-    private AprilTagProcessor aprilTag;
 
     public static int  DECIMATION = 3;
 
@@ -192,7 +191,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
                 RevHubOrientationOnRobot(logoDirection, usbDirection);
         imu.initialize(new IMU.Parameters(orientationOnRobot));
 
-        drive = new MecanumDrive(hardwareMap, imu);
+        drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
     }
 
     @Override
@@ -282,13 +281,13 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
 
         // Replace manual drive(...) call with Roadrunner control
         // Use setWeightedDrivePower and update for holo drive and localization
-        drive.setWeightedDrivePower(new Pose2d(driveSpeed, strafe, turn));
-        drive.update();
+       drive.setDrivePowers(new PoseVelocity2d(new Vector2d(driveSpeed, strafe), Math.toRadians(turn)));
+        drive.updatePoseEstimate();
 
-        Pose2d poseEstimate = drive.getPoseEstimate();
-        telemetry.addData("x", poseEstimate.getX());
-        telemetry.addData("y", poseEstimate.getY());
-        telemetry.addData("heading", Math.toDegrees(poseEstimate.getHeading()));
+        Pose2d poseEstimate = drive.localizer.getPose();
+        telemetry.addData("x", poseEstimate.position.x);
+        telemetry.addData("y", poseEstimate.position.y);
+        telemetry.addData("heading", Math.toDegrees(poseEstimate.heading.toDouble()));
 
 
         telemetryAprilTag();
