@@ -47,6 +47,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -126,18 +127,18 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
-        rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        leftShooterWheel = hardwareMap.get(DcMotorEx.class, "left shooter wheel");
-        leftShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        triggerServo = hardwareMap.get (Servo.class, "trigger");
-        triggerServo.setPosition(0.25);
+//        rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
+//        rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
+//        rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//
+//        leftShooterWheel = hardwareMap.get(DcMotorEx.class, "left shooter wheel");
+//        leftShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
+//        leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//
+//        triggerServo = hardwareMap.get (Servo.class, "trigger");
+//        triggerServo.setPosition(0.25);
 
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
@@ -174,13 +175,13 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     @Override
     public void loop() {
 
-        telemetry.addLine(String.format("Motor max RPMs L: %f, R: %f", leftShooterWheel.getMotorType().getMaxRPM(),
-                rightShooterWheel.getMotorType().getMaxRPM()));
-        telemetry.addLine(String.format("Motor power: %f / %f",
-                leftShooterWheel.getMotorType().getAchieveableMaxRPMFraction(),
-                rightShooterWheel.getMotorType().getAchieveableMaxRPMFraction()));
-        telemetry.addData("Left power", leftShooterWheel.getPower());
-        telemetry.addData("Right power", rightShooterWheel.getPower());
+//        telemetry.addLine(String.format("Motor max RPMs L: %f, R: %f", leftShooterWheel.getMotorType().getMaxRPM(),
+//                rightShooterWheel.getMotorType().getMaxRPM()));
+//        telemetry.addLine(String.format("Motor power: %f / %f",
+//                leftShooterWheel.getMotorType().getAchieveableMaxRPMFraction(),
+//                rightShooterWheel.getMotorType().getAchieveableMaxRPMFraction()));
+//        telemetry.addData("Left power", leftShooterWheel.getPower());
+//        telemetry.addData("Right power", rightShooterWheel.getPower());
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
@@ -231,32 +232,44 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
                 strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
                 telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
             }
+        } else if (gamepad1.right_bumper && goalTag != null) {
+            double headingError = -goalTag.ftcPose.bearing;
+            final double BEARING_THRESHOLD = 1.0; // Angled towards the tag (degrees)
+            driveSpeed = -gamepad1.left_stick_y / 2.0;
+            strafe = gamepad1.left_stick_x  / 2.0;
+            if (Math.abs(headingError) < BEARING_THRESHOLD) {
+                turn = 0;
+                telemetry.addData("Auto", "Robot aligned with AprilTag!");
+            } else {
+                turn = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+            }
+            telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             // Manual control section
             driveSpeed = -gamepad1.left_stick_y / 2.0;
-            strafe = -gamepad1.left_stick_x  / 2.0;
-            turn   = -gamepad1.right_stick_x / 3.0;
+            strafe = gamepad1.left_stick_x  / 2.0;
+            turn   = gamepad1.right_stick_x / 3.0;
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
         // Basic shooting logic
-        if (gamepad2.cross) {
-            rightShooterWheel.setPower(SHOOTER_SPEED);
-            leftShooterWheel.setPower(SHOOTER_SPEED);
-        } else {
-            rightShooterWheel.setPower(0);
-            leftShooterWheel.setPower(0);
-            //testServo.setPosition(0.5);
-        }
-        if (gamepad2.circle) {
-            triggerServo.setPosition(0.75);
-        } else {
-            triggerServo.setPosition(0.25);
-        }
+//        if (gamepad2.cross) {
+//            rightShooterWheel.setPower(SHOOTER_SPEED);
+//            leftShooterWheel.setPower(SHOOTER_SPEED);
+//        } else {
+//            rightShooterWheel.setPower(0);
+//            leftShooterWheel.setPower(0);
+//            //testServo.setPosition(0.5);
+//        }
+//        if (gamepad2.circle) {
+//            triggerServo.setPosition(0.75);
+//        } else {
+//            triggerServo.setPosition(0.25);
+//        }
 
 
         telemetry.addLine("Press triangle to reset Yaw");
-        telemetry.addLine("Hold left bumper to drive in robot relative");
+        telemetry.addLine("Hold right bumper to drive in robot relative");
         telemetry.addLine("The left joystick sets the robot direction");
         telemetry.addLine("Moving the right joystick left and right turns the robot");
 
@@ -269,11 +282,11 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         }
         // If you press the left bumper, you get a drive from the point of view of the robot
         // (much like driving an RC vehicle)
-        if (gamepad1.left_bumper) {
-            drive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        } else {
-            driveFieldRelative(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        }
+//        if (gamepad1.right_bumper) {
+//            drive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+//        } else {
+        driveFieldRelative(driveSpeed, strafe, turn);
+        //}
     }
 
     public GoBildaPinpointDriver.EncoderDirection pinpointDirectionX() {
@@ -319,13 +332,22 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         double r = Math.hypot(right, forward);
 
         // Second, rotate angle by the angle the robot is pointing
-        theta = drive.localizer.getPose().heading.toDouble();
+        theta = AngleUnit.normalizeRadians(
+                theta - drive.localizer.getPose().heading.toDouble());
 //        theta = AngleUnit.normalizeRadians(theta -
 //                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
         double newRight = r * Math.cos(theta);
+
+        telemetry.addLine(String.format(
+                "Drive Field Relative: Theta: %3.1f, \n" +
+                        "Rotate: %2.1f, \n" +
+                        "Forward: %2.1f xformed to %2.1f, \n" +
+                        "Right: %2.1f xformed to %2.1f",
+                theta, rotate, forward, newForward, right, newRight
+        ));
 
         // Finally, call the drive method with robot relative forward and right amounts
         drive(newForward, newRight, rotate);
@@ -335,7 +357,7 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public void drive(double forward, double right, double rotate) {
         // Replace manual drive(...) call with Roadrunner control
         // Use setWeightedDrivePower and update for holo drive and localization
-        drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, right), Math.toRadians(rotate)));
+        drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, -right), -rotate));
 
 //        // This calculates the power needed for each wheel based on the amount of forward,
 //        // strafe right, and rotate
