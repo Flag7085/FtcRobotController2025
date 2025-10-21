@@ -8,6 +8,7 @@ import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
 public class MeepMeepTesting {
+
     public static Action demo(RoadRunnerBotEntity bot) {
         return bot
                 .getDrive()
@@ -64,11 +65,50 @@ public class MeepMeepTesting {
 
         RoadRunnerBotEntity myBot = new DefaultBotBuilder(meepMeep)
                 .setStartPose(new Pose2d(0,0,0))
+                .setDimensions(12.0, 18.0)
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
                 .setConstraints(60, 60, Math.toRadians(180), Math.toRadians(180), 15)
                 .build();
 
-        myBot.runAction(demo(myBot)); // change this to dev(myBot) to run your test!
+        myBot.runAction(
+                myBot.getDrive()
+                    .actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
+
+                    // Line up and shoot
+                    .lineToXSplineHeading(-30, Math.toRadians(135))
+                    .waitSeconds(1.0)
+
+                    // Go pick up first line of Artifacts
+                    .setReversed(true)
+                    .splineToLinearHeading(new Pose2d(-12, 24, Math.toRadians(90)), Math.toRadians(0))
+                    .setReversed(false)
+                    .lineToY(52, (pose2dDual, posePath, v) -> 10)
+
+                    // Line up and shoot
+                    .setReversed(true)
+                    .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
+                    .waitSeconds(1.0)
+                    .setReversed(false)
+
+                    // Go pick up second line of Artifacts
+                    .setReversed(true)
+                    .splineTo(new Vector2d(0, 24), Math.toRadians(0))
+                    .splineToSplineHeading(new Pose2d(12, 30, Math.toRadians(90)), Math.toRadians(90))
+                    .setReversed(false)
+                    .lineToY(52, (pose2dDual, posePath, v) -> 10)
+
+                    // Line up and shoot
+                    .setReversed(true)
+                    .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
+                    .waitSeconds(1.0)
+                    .setReversed(false)
+
+                    // Go park to the side near goal
+                    .setTangent(Math.toRadians(60))
+                    .splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
+                    .waitSeconds(0.5)
+                    .build());
+
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
