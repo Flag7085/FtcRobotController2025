@@ -26,7 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import android.annotation.SuppressLint;
 
@@ -43,7 +43,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -72,21 +71,32 @@ import java.util.List;
  */
 @SuppressLint("DefaultLocale")
 @Config
-@TeleOp(name = "Decode Teleop", group = "Robot")
-public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
-    public static double SHOOTER_SPEED = 0.5;
+@TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
+public class DecodeTeleopTesting extends OpMode {
     public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    public static  double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    public static  double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
-    public static  double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    // public static double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    // public static double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
+    public static double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
-    public static  double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
-    public static  double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
-    public static  double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
+    // public static double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
+    // public static double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
+    public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
+    public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
+
+    public static DcMotorSimple.Direction INTAKE_DIRECTION = DcMotorSimple.Direction.FORWARD;
+    public static DcMotorSimple.Direction KICKER_DIRECTION = DcMotorSimple.Direction.FORWARD;
+    public static DcMotorSimple.Direction SHOOTER_DIRECTION = DcMotorSimple.Direction.FORWARD;
+    public static double SHOOTER_SPEED = 0.5;
+    public static double KICKER_SPEED = 0.5;
+    public static double INTAKE_SPEED = 1.0;
+    public static double DRIVE_SPEED = 0.7;
+    public static double TURN_SPEED = 0.5;
+    public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
+
 
 //    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
 //    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
@@ -115,10 +125,9 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
-    DcMotorEx rightShooterWheel;
-    DcMotorEx leftShooterWheel;
-
-    Servo triggerServo;
+    DcMotorEx shooterWheel;
+    DcMotorEx kickerWheel;
+    DcMotorEx intakeWheels;
 
     MecanumDrive drive;  // Add Roadrunner drive object
 
@@ -127,18 +136,20 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-//        rightShooterWheel = hardwareMap.get(DcMotorEx.class, "right shooter wheel");
-//        rightShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        rightShooterWheel.setDirection(DcMotorSimple.Direction.REVERSE);
-//        rightShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//
-//        leftShooterWheel = hardwareMap.get(DcMotorEx.class, "left shooter wheel");
-//        leftShooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        leftShooterWheel.setDirection(DcMotorSimple.Direction.FORWARD);
-//        leftShooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//
-//        triggerServo = hardwareMap.get (Servo.class, "trigger");
-//        triggerServo.setPosition(0.25);
+        shooterWheel = hardwareMap.get(DcMotorEx.class, "shooter");
+        shooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooterWheel.setDirection(SHOOTER_DIRECTION);
+        shooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        kickerWheel = hardwareMap.get(DcMotorEx.class, "kicker");
+        kickerWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        kickerWheel.setDirection(KICKER_DIRECTION);
+        kickerWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+        intakeWheels = hardwareMap.get(DcMotorEx.class, "intake");
+        intakeWheels.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intakeWheels.setDirection(INTAKE_DIRECTION);
+        intakeWheels.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
@@ -206,37 +217,37 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
         double driveSpeed, strafe, turn;
 
         // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
-        if (gamepad1.left_bumper && goalTag != null) {
-            // Determine heading, range, and yaw (tag image rotation) error.
-            double rangeError = (goalTag.ftcPose.range - DESIRED_DISTANCE);
-            double headingError = goalTag.ftcPose.bearing;
-            double yawError = goalTag.ftcPose.yaw;
-
-            // Define thresholds for being "aligned."
-            final double RANGE_THRESHOLD = 1.0; // Close enough to the AprilTag (inches)
-            final double BEARING_THRESHOLD = 5.0; // Angled towards the tag (degrees)
-            final double YAW_THRESHOLD = 5.0; // Squared up to tag (degrees)
-
-            // Check if the robot is aligned within thresholds.
-            if (Math.abs(rangeError) < RANGE_THRESHOLD &&
-                    Math.abs(headingError) < BEARING_THRESHOLD &&
-                    Math.abs(yawError) < YAW_THRESHOLD) {
-                driveSpeed = 0;
-                strafe = 0;
-                turn = 0;
-                telemetry.addData("Auto", "Robot aligned with AprilTag!");
-            } else {
-                // Use speed and turn "gains" to calculate robot movement.
-                driveSpeed = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-                turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
-                strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
-                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
-            }
-        } else if (gamepad1.right_bumper && goalTag != null) {
+//        if (gamepad1.left_bumper && goalTag != null) {
+//            // Determine heading, range, and yaw (tag image rotation) error.
+//            double rangeError = (goalTag.ftcPose.range - DESIRED_DISTANCE);
+//            double headingError = goalTag.ftcPose.bearing;
+//            double yawError = goalTag.ftcPose.yaw;
+//
+//            // Define thresholds for being "aligned."
+//            final double RANGE_THRESHOLD = 1.0; // Close enough to the AprilTag (inches)
+//            final double YAW_THRESHOLD = 5.0; // Squared up to tag (degrees)
+//
+//            // Check if the robot is aligned within thresholds.
+//            if (Math.abs(rangeError) < RANGE_THRESHOLD &&
+//                    Math.abs(headingError) < BEARING_THRESHOLD &&
+//                    Math.abs(yawError) < YAW_THRESHOLD) {
+//                driveSpeed = 0;
+//                strafe = 0;
+//                turn = 0;
+//                telemetry.addData("Auto", "Robot aligned with AprilTag!");
+//            } else {
+//                // Use speed and turn "gains" to calculate robot movement.
+//                driveSpeed = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+//                turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+//                strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
+//                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+//            }
+//        } else
+        if (gamepad1.right_bumper && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
-            final double BEARING_THRESHOLD = 1.0; // Angled towards the tag (degrees)
-            driveSpeed = -gamepad1.left_stick_y / 2.0;
-            strafe = gamepad1.left_stick_x  / 2.0;
+
+            driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
+            strafe = gamepad1.left_stick_x  * DRIVE_SPEED;
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
                 telemetry.addData("Auto", "Robot aligned with AprilTag!");
@@ -246,26 +257,34 @@ public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
             telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             // Manual control section
-            driveSpeed = -gamepad1.left_stick_y / 2.0;
-            strafe = gamepad1.left_stick_x  / 2.0;
-            turn   = gamepad1.right_stick_x / 3.0;
+            driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
+            strafe = gamepad1.left_stick_x  * DRIVE_SPEED;
+            turn   = gamepad1.right_stick_x * TURN_SPEED;
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
         // Basic shooting logic
-//        if (gamepad2.cross) {
-//            rightShooterWheel.setPower(SHOOTER_SPEED);
-//            leftShooterWheel.setPower(SHOOTER_SPEED);
-//        } else {
-//            rightShooterWheel.setPower(0);
-//            leftShooterWheel.setPower(0);
-//            //testServo.setPosition(0.5);
-//        }
-//        if (gamepad2.circle) {
-//            triggerServo.setPosition(0.75);
-//        } else {
-//            triggerServo.setPosition(0.25);
-//        }
+        if (gamepad1.right_trigger > 0.5) {
+            shooterWheel.setPower(SHOOTER_SPEED);
+        } else {
+            shooterWheel.setPower(0);
+        }
+
+        if (gamepad1.cross) {
+            kickerWheel.setPower(KICKER_SPEED);
+        } else {
+            kickerWheel.setPower(0);
+        }
+
+        if (gamepad1.left_trigger > 0.5) {
+            intakeWheels.setPower(INTAKE_SPEED);
+        } else {
+            intakeWheels.setPower(0);
+        }
+
+        telemetry.addData("Current Speed (ticks): ", shooterWheel.getVelocity());
+        telemetry.addData("Current Speed (RPM): ",
+                shooterWheel.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION);
 
 
         telemetry.addLine("Press triangle to reset Yaw");
