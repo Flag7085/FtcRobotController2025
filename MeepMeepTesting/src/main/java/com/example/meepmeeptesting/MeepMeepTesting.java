@@ -50,9 +50,13 @@ public class MeepMeepTesting {
     public static Action dev(RoadRunnerBotEntity bot) {
         return bot
                 .getDrive()
-                .actionBuilder(new Pose2d(0, 0, 0))
-
-                .turn(Math.toRadians(360))
+                .actionBuilder(new Pose2d(63, 20, Math.toRadians(180)))
+                //.turnTo(Math.toRadians(180))
+               .lineToX(-12)
+                .turn(Math.toRadians(-90))
+                .lineToY(56)
+                .splineTo(new Vector2d(-30,30), Math.toRadians(220))
+                .turn(Math.toRadians(-90))
                 // TO DO: using the bot methods documented in our demo Action,
                 // develop your new test route here
 
@@ -64,11 +68,12 @@ public class MeepMeepTesting {
 
         RoadRunnerBotEntity myBot = new DefaultBotBuilder(meepMeep)
                 .setStartPose(new Pose2d(0,0,0))
+                .setDimensions(12, 18)
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
                 .setConstraints(60, 60, Math.toRadians(180), Math.toRadians(180), 15)
                 .build();
 
-        myBot.runAction(demo(myBot)); // change this to dev(myBot) to run your test!
+        myBot.runAction(dev(myBot)); // change this to dev(myBot) to run your test!
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
