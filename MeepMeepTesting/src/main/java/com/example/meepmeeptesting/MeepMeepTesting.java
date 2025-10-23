@@ -52,10 +52,11 @@ public class MeepMeepTesting {
                 .getDrive()
                 .actionBuilder(new Pose2d(63, 20, Math.toRadians(180)))
                 //.turnTo(Math.toRadians(180))
-               .lineToX(-16)
-                .turn(Math.toRadians(-45))
-                .splineToConstantHeading(new Vector2d(-30,30), Math.toRadians(270))
-               // .turn(Math.toRadians(360))
+               .lineToX(-12)
+                .turn(Math.toRadians(-90))
+                .lineToY(56)
+                .splineTo(new Vector2d(-30,30), Math.toRadians(220))
+                .turn(Math.toRadians(-90))
                 // TO DO: using the bot methods documented in our demo Action,
                 // develop your new test route here
 
