@@ -7,11 +7,10 @@ import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
+/**
+ * See acmerobotics MeepMeep github page: https://github.com/acmerobotics/MeepMeep/blob/master/README.md
+ */
 public class MeepMeepTesting {
-    private enum Alliance {
-        RED,
-        BLUE
-    }
 
     public static Action buildMeepMeepSampleAuto(RoadRunnerBotEntity bot) {
         return bot.getDrive()
@@ -114,11 +113,11 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                buildFarSideAuto1(myBot)
+                buildGoalSideAuto1(myBot)
         );
 
 
-        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_PAPER)
+        meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
                 .setDarkMode(true)
                 .setBackgroundAlpha(0.95f)
                 .addEntity(myBot)

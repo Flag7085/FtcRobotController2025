@@ -29,6 +29,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import android.annotation.SuppressLint;
+import android.util.Size;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
@@ -71,8 +72,8 @@ import java.util.List;
  */
 @SuppressLint("DefaultLocale")
 @Config
-@TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
-public class DecodeTeleopTesting extends OpMode {
+@TeleOp(name = "ChassisBot Driving", group = "Robot")
+public class ChassisBotTeleop extends OpMode {
     public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
@@ -87,20 +88,9 @@ public class DecodeTeleopTesting extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
 
-    public static DcMotorSimple.Direction INTAKE_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static DcMotorSimple.Direction KICKER_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static DcMotorSimple.Direction SHOOTER_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static double SHOOTER_SPEED = 0.5;
-    public static double KICKER_SPEED = 0.5;
-    public static double INTAKE_SPEED = 1.0;
+
     public static double DRIVE_SPEED = 0.7;
     public static double TURN_SPEED = 0.5;
-    public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
-
-
-//    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
-//    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
-//    double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
     /**
      * The variable to store our instance of the AprilTag processor.
@@ -108,11 +98,6 @@ public class DecodeTeleopTesting extends OpMode {
     private AprilTagProcessor aprilTag;
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
 
-//    // This declares the four motors needed
-//    DcMotor frontLeftDrive;
-//    DcMotor frontRightDrive;
-//    DcMotor backLeftDrive;
-//    DcMotor backRightDrive;
 
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
@@ -125,12 +110,6 @@ public class DecodeTeleopTesting extends OpMode {
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
-    DcMotorEx shooterWheel;
-    DcMotorEx shooterWheel2;
-
-    DcMotorEx kickerWheel;
-    DcMotorEx intakeWheels;
-
     MecanumDrive drive;  // Add Roadrunner drive object
 
 
@@ -138,49 +117,8 @@ public class DecodeTeleopTesting extends OpMode {
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        shooterWheel = hardwareMap.get(DcMotorEx.class, "shooter");
-        shooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooterWheel.setDirection(SHOOTER_DIRECTION);
-        shooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        shooterWheel2 = hardwareMap.get(DcMotorEx.class, "shooter2");
-        shooterWheel2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if (SHOOTER_DIRECTION == DcMotorSimple.Direction.FORWARD) {
-            shooterWheel2.setDirection(DcMotorSimple.Direction.REVERSE);
-        } else {
-            shooterWheel2.setDirection(DcMotorSimple.Direction.FORWARD);
-        }
-        shooterWheel2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        kickerWheel = hardwareMap.get(DcMotorEx.class, "kicker");
-        kickerWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        kickerWheel.setDirection(KICKER_DIRECTION);
-        kickerWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        intakeWheels = hardwareMap.get(DcMotorEx.class, "intake");
-        intakeWheels.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        intakeWheels.setDirection(INTAKE_DIRECTION);
-        intakeWheels.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
-
-//        frontLeftDrive = hardwareMap.get(DcMotor.class, "FL Drive");
-//        frontRightDrive = hardwareMap.get(DcMotor.class, "FR Drive");
-//        backLeftDrive = hardwareMap.get(DcMotor.class, "BL Drive");
-//        backRightDrive = hardwareMap.get(DcMotor.class, "BR Drive");
-//
-////         We set the left motors in reverse which is needed for drive trains where the left
-////         motors are opposite to the right ones.
-//        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-//        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-//
-////         This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
-////         wires, you should remove these
-//        frontLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        frontRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        backRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Initialize the Apriltag Detection process
         initAprilTag();
@@ -196,15 +134,6 @@ public class DecodeTeleopTesting extends OpMode {
 
     @Override
     public void loop() {
-
-//        telemetry.addLine(String.format("Motor max RPMs L: %f, R: %f", leftShooterWheel.getMotorType().getMaxRPM(),
-//                rightShooterWheel.getMotorType().getMaxRPM()));
-//        telemetry.addLine(String.format("Motor power: %f / %f",
-//                leftShooterWheel.getMotorType().getAchieveableMaxRPMFraction(),
-//                rightShooterWheel.getMotorType().getAchieveableMaxRPMFraction()));
-//        telemetry.addData("Left power", leftShooterWheel.getPower());
-//        telemetry.addData("Right power", rightShooterWheel.getPower());
-
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
@@ -227,33 +156,6 @@ public class DecodeTeleopTesting extends OpMode {
 
         double driveSpeed, strafe, turn;
 
-        // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
-//        if (gamepad1.left_bumper && goalTag != null) {
-//            // Determine heading, range, and yaw (tag image rotation) error.
-//            double rangeError = (goalTag.ftcPose.range - DESIRED_DISTANCE);
-//            double headingError = goalTag.ftcPose.bearing;
-//            double yawError = goalTag.ftcPose.yaw;
-//
-//            // Define thresholds for being "aligned."
-//            final double RANGE_THRESHOLD = 1.0; // Close enough to the AprilTag (inches)
-//            final double YAW_THRESHOLD = 5.0; // Squared up to tag (degrees)
-//
-//            // Check if the robot is aligned within thresholds.
-//            if (Math.abs(rangeError) < RANGE_THRESHOLD &&
-//                    Math.abs(headingError) < BEARING_THRESHOLD &&
-//                    Math.abs(yawError) < YAW_THRESHOLD) {
-//                driveSpeed = 0;
-//                strafe = 0;
-//                turn = 0;
-//                telemetry.addData("Auto", "Robot aligned with AprilTag!");
-//            } else {
-//                // Use speed and turn "gains" to calculate robot movement.
-//                driveSpeed = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-//                turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
-//                strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
-//                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
-//            }
-//        } else
         if (gamepad1.right_bumper && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
 
@@ -274,32 +176,6 @@ public class DecodeTeleopTesting extends OpMode {
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
-        // Basic shooting logic
-        if (gamepad1.right_trigger > 0.5) {
-            shooterWheel.setPower(SHOOTER_SPEED);
-            shooterWheel2.setPower(SHOOTER_SPEED);
-        } else {
-            shooterWheel.setPower(0);
-            shooterWheel2.setPower(0);
-        }
-
-        if (gamepad1.cross) {
-            kickerWheel.setPower(KICKER_SPEED);
-        } else {
-            kickerWheel.setPower(0);
-        }
-
-        if (gamepad1.left_trigger > 0.5) {
-            intakeWheels.setPower(INTAKE_SPEED);
-        } else {
-            intakeWheels.setPower(0);
-        }
-
-        telemetry.addData("Current Speed (ticks): ", shooterWheel2.getVelocity());
-        telemetry.addData("Current Speed (RPM): ",
-                shooterWheel2.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION);
-
-
         telemetry.addLine("Press triangle to reset Yaw");
         telemetry.addLine("Hold right bumper to drive in robot relative");
         telemetry.addLine("The left joystick sets the robot direction");
@@ -312,13 +188,8 @@ public class DecodeTeleopTesting extends OpMode {
             Pose2d currentPose = drive.localizer.getPose();
             drive.localizer.setPose(new Pose2d(0, 0, 0.0));
         }
-        // If you press the left bumper, you get a drive from the point of view of the robot
-        // (much like driving an RC vehicle)
-//        if (gamepad1.right_bumper) {
-//            drive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-//        } else {
+
         driveFieldRelative(driveSpeed, strafe, turn);
-        //}
     }
 
     public GoBildaPinpointDriver.EncoderDirection pinpointDirectionX() {
@@ -391,31 +262,6 @@ public class DecodeTeleopTesting extends OpMode {
         // Use setWeightedDrivePower and update for holo drive and localization
         drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, -right), -rotate));
 
-//        // This calculates the power needed for each wheel based on the amount of forward,
-//        // strafe right, and rotate
-//        double frontLeftPower = forward + right + rotate;
-//        double frontRightPower = forward - right - rotate;
-//        double backRightPower = forward + right - rotate;
-//        double backLeftPower = forward - right + rotate;
-//
-//        double maxPower = 1.0;
-//        double maxSpeed = 1.0;  // make this slower for outreaches
-//
-//        // This is needed to make sure we don't pass > 1.0 to any wheel
-//        // It allows us to keep all of the motors in proportion to what they should
-//        // be and not get clipped
-//        maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
-//        maxPower = Math.max(maxPower, Math.abs(frontRightPower));
-//        maxPower = Math.max(maxPower, Math.abs(backRightPower));
-//        maxPower = Math.max(maxPower, Math.abs(backLeftPower));
-//
-//        // We multiply by maxSpeed so that it can be set lower for outreaches
-//        // When a young child is driving the robot, we may not want to allow full
-//        // speed.
-//        frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
-//        frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
-//        backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
-//        backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
     }
 
     /**
@@ -459,6 +305,7 @@ public class DecodeTeleopTesting extends OpMode {
 
         // Choose a camera resolution. Not all cameras support all resolutions.
         //builder.setCameraResolution(new Size(640, 480));
+        //builder.setCameraResolution(new Size(1920, 1080));
 
         // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
         builder.enableLiveView(true);
