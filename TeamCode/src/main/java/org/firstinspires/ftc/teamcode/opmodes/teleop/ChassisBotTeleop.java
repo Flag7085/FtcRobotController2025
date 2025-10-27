@@ -29,6 +29,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import android.annotation.SuppressLint;
+import android.util.Size;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
@@ -49,9 +50,6 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
-import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
-import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
-import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -74,10 +72,9 @@ import java.util.List;
  */
 @SuppressLint("DefaultLocale")
 @Config
-@TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
-public class DecodeTeleopTesting extends OpMode {
+@TeleOp(name = "ChassisBot Driving", group = "Robot")
+public class ChassisBotTeleop extends OpMode {
     public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
-    public static double SHOOTER_SPEED = 3000;
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -91,14 +88,9 @@ public class DecodeTeleopTesting extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
 
+
     public static double DRIVE_SPEED = 0.7;
     public static double TURN_SPEED = 0.5;
-    public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
-
-
-//    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
-//    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
-//    double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
     /**
      * The variable to store our instance of the AprilTag processor.
@@ -106,11 +98,6 @@ public class DecodeTeleopTesting extends OpMode {
     private AprilTagProcessor aprilTag;
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
 
-//    // This declares the four motors needed
-//    DcMotor frontLeftDrive;
-//    DcMotor frontRightDrive;
-//    DcMotor backLeftDrive;
-//    DcMotor backRightDrive;
 
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
@@ -122,23 +109,16 @@ public class DecodeTeleopTesting extends OpMode {
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
+
     MecanumDrive drive;  // Add Roadrunner drive object
 
-    ShooterSubsystem shooterSubsystem;
-    FeederSubsystem feederSubsystem;
-    IntakeSubsystem intakeSubsystem;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
-        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem);
-        intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
-
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
-
 
         // Initialize the Apriltag Detection process
         initAprilTag();
@@ -154,14 +134,8 @@ public class DecodeTeleopTesting extends OpMode {
 
     @Override
     public void loop() {
-
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
-
-        telemetry.addData("IMU Angle",
-                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-        telemetry.addData("IMU Velocity",
-                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
 
         // TODO - set and read angular velocity
 
@@ -182,7 +156,7 @@ public class DecodeTeleopTesting extends OpMode {
 
         double driveSpeed, strafe, turn;
 
-        if (gamepad1.circle && goalTag != null) {
+        if (gamepad1.right_bumper && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
 
             driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
@@ -202,26 +176,6 @@ public class DecodeTeleopTesting extends OpMode {
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
-        // Basic shooting logic
-        if (gamepad1.right_trigger > 0.5) {
-            shooterSubsystem.setRPM(SHOOTER_SPEED);
-        } else {
-            shooterSubsystem.setRPM(0);
-        }
-        shooterSubsystem.loop();
-
-        if (gamepad1.cross) {
-            feederSubsystem.start();
-        } else {
-            feederSubsystem.stop();
-        }
-
-        if (gamepad1.left_trigger > 0.5) {
-            intakeSubsystem.start();
-        } else {
-            intakeSubsystem.stop();
-        }
-
         telemetry.addLine("Press triangle to reset Yaw");
         telemetry.addLine("Hold right bumper to drive in robot relative");
         telemetry.addLine("The left joystick sets the robot direction");
@@ -236,6 +190,23 @@ public class DecodeTeleopTesting extends OpMode {
         }
 
         driveFieldRelative(driveSpeed, strafe, turn);
+    }
+
+    public GoBildaPinpointDriver.EncoderDirection pinpointDirectionX() {
+        return GoBildaPinpointDriver.EncoderDirection.FORWARD;
+
+    }
+    public GoBildaPinpointDriver.EncoderDirection getPinpointDirectionY() {
+        return GoBildaPinpointDriver.EncoderDirection.FORWARD;
+    }
+
+    public GoBildaPinpointDriver getPinpoint() {
+        GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpoint.setOffsets(-4.0, -4.0, DistanceUnit.INCH);
+        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        pinpoint.setEncoderDirections(pinpointDirectionX(), getPinpointDirectionY());
+        pinpoint.resetPosAndIMU();
+        return pinpoint;
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
@@ -290,6 +261,7 @@ public class DecodeTeleopTesting extends OpMode {
         // Replace manual drive(...) call with Roadrunner control
         // Use setWeightedDrivePower and update for holo drive and localization
         drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, -right), -rotate));
+
     }
 
     /**
@@ -333,6 +305,7 @@ public class DecodeTeleopTesting extends OpMode {
 
         // Choose a camera resolution. Not all cameras support all resolutions.
         //builder.setCameraResolution(new Size(640, 480));
+        //builder.setCameraResolution(new Size(1920, 1080));
 
         // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
         builder.enableLiveView(true);

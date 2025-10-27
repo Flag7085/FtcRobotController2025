@@ -7,6 +7,9 @@ import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
+/**
+ * See acmerobotics MeepMeep github page: https://github.com/acmerobotics/MeepMeep/blob/master/README.md
+ */
 public class MeepMeepTesting {
 
     public static Action demo(RoadRunnerBotEntity bot) {
@@ -161,7 +164,7 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                buildFarSideAuto1(myBot)
+                buildGoalSideAuto1(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
