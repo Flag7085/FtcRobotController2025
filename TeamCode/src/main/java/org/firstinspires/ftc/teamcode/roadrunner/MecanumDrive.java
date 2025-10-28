@@ -71,18 +71,18 @@ public final class MecanumDrive {
         public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
         public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.UP;
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
         // drivetrain model parameters
         // NOTE that the drive wheel inches per tick and lateral inches per tick will likely
         // be different.  There is extra slippage when a Mecanum chassis strafes sideways and
         // we want our models to correctly account for this slippage.
-        public double inPerTick = 0.0029569; // 95 inches / 32137 ticks
+        public double inPerTick = 0.00293697; // 95 inches / 32137 ticks
         public double lateralInPerTick = inPerTick;
         public double trackWidthTicks = 3060.0449951468254;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.4869942231906714;
+        public double kS = 0.9800273827976578; // 0.4869942231906714;
         public double kV = 0.0005931220849857462;
         public double kA = 0.00011;
 

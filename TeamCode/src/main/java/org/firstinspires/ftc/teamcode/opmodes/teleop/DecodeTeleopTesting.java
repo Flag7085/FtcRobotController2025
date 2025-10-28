@@ -49,6 +49,9 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
+import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
+import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -74,6 +77,7 @@ import java.util.List;
 @TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
 public class DecodeTeleopTesting extends OpMode {
     public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
+    public static double SHOOTER_SPEED = 3000;
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -87,12 +91,6 @@ public class DecodeTeleopTesting extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
 
-    public static DcMotorSimple.Direction INTAKE_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static DcMotorSimple.Direction KICKER_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static DcMotorSimple.Direction SHOOTER_DIRECTION = DcMotorSimple.Direction.FORWARD;
-    public static double SHOOTER_SPEED = 0.5;
-    public static double KICKER_SPEED = 0.5;
-    public static double INTAKE_SPEED = 1.0;
     public static double DRIVE_SPEED = 0.7;
     public static double TURN_SPEED = 0.5;
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
@@ -125,31 +123,19 @@ public class DecodeTeleopTesting extends OpMode {
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
-    DcMotorEx shooterWheel;
-    DcMotorEx kickerWheel;
-    DcMotorEx intakeWheels;
-
     MecanumDrive drive;  // Add Roadrunner drive object
 
+    ShooterSubsystem shooterSubsystem;
+    FeederSubsystem feederSubsystem;
+    IntakeSubsystem intakeSubsystem;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        shooterWheel = hardwareMap.get(DcMotorEx.class, "shooter");
-        shooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooterWheel.setDirection(SHOOTER_DIRECTION);
-        shooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        kickerWheel = hardwareMap.get(DcMotorEx.class, "kicker");
-        kickerWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        kickerWheel.setDirection(KICKER_DIRECTION);
-        kickerWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        intakeWheels = hardwareMap.get(DcMotorEx.class, "intake");
-        intakeWheels.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        intakeWheels.setDirection(INTAKE_DIRECTION);
-        intakeWheels.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
+        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem);
+        intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
 
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
@@ -185,14 +171,6 @@ public class DecodeTeleopTesting extends OpMode {
 
     @Override
     public void loop() {
-
-//        telemetry.addLine(String.format("Motor max RPMs L: %f, R: %f", leftShooterWheel.getMotorType().getMaxRPM(),
-//                rightShooterWheel.getMotorType().getMaxRPM()));
-//        telemetry.addLine(String.format("Motor power: %f / %f",
-//                leftShooterWheel.getMotorType().getAchieveableMaxRPMFraction(),
-//                rightShooterWheel.getMotorType().getAchieveableMaxRPMFraction()));
-//        telemetry.addData("Left power", leftShooterWheel.getPower());
-//        telemetry.addData("Right power", rightShooterWheel.getPower());
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
@@ -243,7 +221,7 @@ public class DecodeTeleopTesting extends OpMode {
 //                telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
 //            }
 //        } else
-        if (gamepad1.right_bumper && goalTag != null) {
+        if (gamepad1.circle && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
 
             driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
@@ -265,26 +243,24 @@ public class DecodeTeleopTesting extends OpMode {
 
         // Basic shooting logic
         if (gamepad1.right_trigger > 0.5) {
-            shooterWheel.setPower(SHOOTER_SPEED);
+            shooterSubsystem.setRPM(SHOOTER_SPEED);
         } else {
-            shooterWheel.setPower(0);
+            shooterSubsystem.setRPM(0);
         }
+        shooterSubsystem.loop();
 
         if (gamepad1.cross) {
-            kickerWheel.setPower(KICKER_SPEED);
+            feederSubsystem.start();
         } else {
-            kickerWheel.setPower(0);
+            feederSubsystem.stop();
         }
 
         if (gamepad1.left_trigger > 0.5) {
-            intakeWheels.setPower(INTAKE_SPEED);
+            intakeSubsystem.start();
         } else {
-            intakeWheels.setPower(0);
+            intakeSubsystem.stop();
         }
 
-        telemetry.addData("Current Speed (ticks): ", shooterWheel.getVelocity());
-        telemetry.addData("Current Speed (RPM): ",
-                shooterWheel.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION);
 
 
         telemetry.addLine("Press triangle to reset Yaw");

@@ -10,7 +10,6 @@ import org.firstinspires.ftc.teamcode.roadrunner.TankDrive;
 import org.firstinspires.ftc.teamcode.roadrunner.localization.ThreeDeadWheelLocalizer;
 import org.firstinspires.ftc.teamcode.roadrunner.localization.TwoDeadWheelLocalizer;
 
-@Disabled
 public final class ManualFeedbackTuner extends LinearOpMode {
     public static double DISTANCE = 64;
 
