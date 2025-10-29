@@ -73,7 +73,7 @@ public final class TuningOpModes {
         return new PinpointView() {
             @Override
             public float getHeadingVelocity() {
-                return 0;
+                return getHeadingVelocity(UnnormalizedAngleUnit.DEGREES);
             }
 
             GoBildaPinpointDriver.EncoderDirection parDirection = pl.initialParDirection;

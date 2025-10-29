@@ -78,13 +78,13 @@ public final class MecanumDrive {
         // be different.  There is extra slippage when a Mecanum chassis strafes sideways and
         // we want our models to correctly account for this slippage.
         public double inPerTick = 0.00293697; // 95 inches / 32137 ticks
-        public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 3060.0449951468254;
+        public double lateralInPerTick = 0.0020470886562686825; //inPerTick;
+        public double trackWidthTicks = 3454.24448595501;// 3060.0449951468254;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.9800273827976578; // 0.4869942231906714;
-        public double kV = 0.0005931220849857462;
-        public double kA = 0.00011;
+        public double kS = 1.1296522458388907; // 0.4869942231906714;
+        public double kV = 0.0005865736398253977;
+        public double kA = 0.00013; // 0.00011;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 50;

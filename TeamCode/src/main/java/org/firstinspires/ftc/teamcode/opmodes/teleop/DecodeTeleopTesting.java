@@ -175,6 +175,11 @@ public class DecodeTeleopTesting extends OpMode {
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
+        telemetry.addData("IMU Angle",
+                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
+        telemetry.addData("IMU Velocity",
+                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
+
         // TODO - set and read angular velocity
 
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();

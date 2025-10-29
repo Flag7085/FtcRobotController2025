@@ -22,17 +22,17 @@ public final class PinpointLocalizer implements Localizer {
 
         // How far forward (in inches) from the tracking point is the Y (strafe) odometry pod?
         // Forward is positive, back is negative
-        public double yPodOffset = -4.0;
+        public double yPodOffset = -8.0;
 
         public GoBildaPinpointDriver.GoBildaOdometryPods odometryPodType =
                 GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD;
 
         // Direction of the X (forward) encoder
         public GoBildaPinpointDriver.EncoderDirection xEncoderDirection =
-                GoBildaPinpointDriver.EncoderDirection.FORWARD;
+                GoBildaPinpointDriver.EncoderDirection.REVERSED;
         // Direction of the Y (strafe) encoder
         public GoBildaPinpointDriver.EncoderDirection yEncoderDirection =
-                GoBildaPinpointDriver.EncoderDirection.FORWARD;
+                GoBildaPinpointDriver.EncoderDirection.REVERSED;
     }
 
     public static Params PARAMS = new Params();
