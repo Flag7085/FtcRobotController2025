@@ -57,4 +57,16 @@ public class ShooterSubsystem {
          return shooterWheel.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION;
      }
 
+     public double calculateRPMs(double rangeInInches) {
+         double rangeClose = 0.0;
+         double rangeFar = 1.0;
+         double rpmClose = 0.0;
+         double rpmFar = 1.0;
+
+         double slope = (rpmFar - rpmClose) / (rangeFar - rangeClose);
+         double intercept = rpmClose - slope * rangeClose;
+
+         return slope * rangeInInches + intercept;
+     }
+
 }

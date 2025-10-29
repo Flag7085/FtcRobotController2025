@@ -182,14 +182,19 @@ public class DecodeTeleopTesting extends OpMode {
         }
 
         // Basic shooting logic
-        if (gamepad1.right_trigger > 0.5) {
+        if (gamepad2.right_trigger > 0.5) {
+            double targetRPMs = SHOOTER_SPEED_RPM;
+            if (goalTag != null) {
+                targetRPMs = shooterSubsystem.calculateRPMs(goalTag.ftcPose.range);
+                telemetry.addData("calculateRPMs", targetRPMs);
+            }
             shooterSubsystem.setRPM(SHOOTER_SPEED_RPM);
         } else {
             shooterSubsystem.setRPM(0);
         }
         shooterSubsystem.loop();
 
-        if (gamepad1.cross) {
+        if (gamepad2.cross) {
             feederSubsystem.start();
         } else {
             feederSubsystem.stop();
@@ -197,6 +202,8 @@ public class DecodeTeleopTesting extends OpMode {
 
         if (gamepad1.left_trigger > 0.5) {
             intakeSubsystem.start();
+        } else if (gamepad1.right_trigger > 0.5) {
+            intakeSubsystem.reverse();
         } else {
             intakeSubsystem.stop();
         }

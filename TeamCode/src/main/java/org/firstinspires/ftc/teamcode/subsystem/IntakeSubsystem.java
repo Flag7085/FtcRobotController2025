@@ -32,4 +32,6 @@ public class IntakeSubsystem {
     public void stop() {
         intakeWheels.setPower(0);
     }
+
+    public void reverse() { intakeWheels.setPower(-INTAKE_SPEED); }
 }
