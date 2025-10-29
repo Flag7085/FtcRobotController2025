@@ -36,18 +36,13 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
@@ -76,8 +71,7 @@ import java.util.List;
 @Config
 @TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
 public class DecodeTeleopTesting extends OpMode {
-    public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
-    public static double SHOOTER_SPEED = 3000;
+    public static double SHOOTER_SPEED_RPM = 3000;
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -85,32 +79,17 @@ public class DecodeTeleopTesting extends OpMode {
     // public static double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
     // public static double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
     public static double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-
-    // public static double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
-    // public static double MAX_AUTO_STRAFE= 0.5;   //  Clip the strafing speed to this max value (adjust for your robot)
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
 
     public static double DRIVE_SPEED = 0.7;
     public static double TURN_SPEED = 0.5;
-    public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
-
-
-//    double driveSpeed = 0;        // Desired forward power/speed (-1 to +1)
-//    double  strafe          = 0;        // Desired strafe power/speed (-1 to +1)
-//    double  turn            = 0;        // Desired turning power/speed (-1 to +1)
 
     /**
      * The variable to store our instance of the AprilTag processor.
      */
     private AprilTagProcessor aprilTag;
     private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
-
-//    // This declares the four motors needed
-//    DcMotor frontLeftDrive;
-//    DcMotor frontRightDrive;
-//    DcMotor backLeftDrive;
-//    DcMotor backRightDrive;
 
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
@@ -204,7 +183,7 @@ public class DecodeTeleopTesting extends OpMode {
 
         // Basic shooting logic
         if (gamepad1.right_trigger > 0.5) {
-            shooterSubsystem.setRPM(SHOOTER_SPEED);
+            shooterSubsystem.setRPM(SHOOTER_SPEED_RPM);
         } else {
             shooterSubsystem.setRPM(0);
         }
