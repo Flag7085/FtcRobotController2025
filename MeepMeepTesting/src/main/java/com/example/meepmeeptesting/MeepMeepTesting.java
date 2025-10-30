@@ -64,15 +64,28 @@ public class MeepMeepTesting {
                 .waitSeconds(1)
                 .setReversed(false)
 
+                .splineTo(new Vector2d( -36,  36), Math.toRadians(135))
+                .waitSeconds(2)
+                .splineTo(new Vector2d( 12, 20), Math.toRadians(90))
+                .lineToY(50)
+                .setReversed(true)
+                .splineTo(new Vector2d( 12 , 20), Math.toRadians(-30))
+                .setReversed(false)
+                .splineTo(new Vector2d( -36, 36 ), Math.toRadians(135))
+                .waitSeconds(2)
+                .splineTo(new Vector2d( -11, 20), Math.toRadians(90))
+                 .lineToY( 50)
+
                 // MOVE away from launch zone
-                .setTangent(Math.toRadians(90))
-                .lineToY(34)
-                .waitSeconds(1)
+  //              .setTangent(Math.toRadians(90))
+//                .lineToY(34)
+//                .waitSeconds(1)
 
                 // TO DO: using the bot methods documented in our demo Action,
                 // develop your new test route here
 
                 .build();
+
     }
 
     public static void main(String[] args) {
