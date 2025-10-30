@@ -79,14 +79,17 @@ public class MeepMeepTesting {
     public static Action buildGoalSideAuto1(RoadRunnerBotEntity bot) {
         return bot
                 .getDrive()
-                .actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
-
+                //.actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
+                .actionBuilder(new Pose2d(-63, 41, Math.toRadians(180)))
                 // Line up and shoot
-                .lineToXSplineHeading(-30, Math.toRadians(135))
+                //.lineToXSplineHeading(-30, Math.toRadians(135))
+                .setReversed(true)
+                .splineTo(new Vector2d(-30, 30), Math.toRadians(-45))
                 .waitSeconds(1.0)
 
+
+
                 // Go pick up first line of Artifacts
-                .setReversed(true)
                 .splineToLinearHeading(new Pose2d(-12, 24, Math.toRadians(90)), Math.toRadians(0))
                 .setReversed(false)
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
@@ -99,8 +102,7 @@ public class MeepMeepTesting {
 
                 // Go pick up second line of Artifacts
                 .setReversed(true)
-                .splineTo(new Vector2d(0, 24), Math.toRadians(0))
-                .splineToSplineHeading(new Pose2d(12, 30, Math.toRadians(90)), Math.toRadians(90))
+                .splineToSplineHeading(new Pose2d(12, 24, Math.toRadians(90)), Math.toRadians(0))
                 .setReversed(false)
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
 
@@ -122,7 +124,7 @@ public class MeepMeepTesting {
                 .getDrive()
                 .actionBuilder(new Pose2d(63, 16, Math.toRadians(180)))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(150)), 0)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(160)), 0)
                 .waitSeconds(1.0)
 
                 // Pick up closest line of artifacts
@@ -131,7 +133,7 @@ public class MeepMeepTesting {
 
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-30))
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
                 .waitSeconds(1.0)
                 .setReversed(false)
 
@@ -142,13 +144,13 @@ public class MeepMeepTesting {
 
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-30))
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
                 .waitSeconds(1.0)
                 .setReversed(false)
 
                 // Move out of launch zone
-                .setTangent(Math.toRadians(90))
-                .lineToYConstantHeading(48)
+                //.setTangent(Math.toRadians(90))
+                .lineToYConstantHeading(24)
                 .build();
     }
 
@@ -164,7 +166,7 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                buildGoalSideAuto1(myBot)
+                buildFarSideAuto1(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)

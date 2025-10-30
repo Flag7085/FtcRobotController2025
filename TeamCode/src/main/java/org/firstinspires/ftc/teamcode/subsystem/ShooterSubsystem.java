@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -67,6 +68,13 @@ public class ShooterSubsystem {
          double intercept = rpmClose - slope * rangeClose;
 
          return slope * rangeInInches + intercept;
+     }
+
+     public Action setRpmAction(double rpm) {
+         return telemetryPacket -> {
+             setRPM(rpm);
+             return false;
+         };
      }
 
 }

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -34,4 +35,19 @@ public class IntakeSubsystem {
     }
 
     public void reverse() { intakeWheels.setPower(-INTAKE_SPEED); }
+
+    public Action startIntakeAction() {
+        return telemetryPacket -> {
+            start();
+            return false;
+        };
+    }
+
+    public Action stopIntakeAction() {
+        return telemetryPacket -> {
+            stop();
+            return false;
+        };
+    }
+
 }
