@@ -39,6 +39,7 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -67,6 +68,7 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  *
  */
+
 @SuppressLint("DefaultLocale")
 @Config
 @TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
@@ -94,6 +96,9 @@ public class DecodeTeleopTesting extends OpMode {
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
 
+    // LED indicatorLight
+    Servo indicatorLight;
+
     /**
      * The variable to store our instance of the vision portal.
      */
@@ -114,6 +119,8 @@ public class DecodeTeleopTesting extends OpMode {
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
         feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem);
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
+
+        indicatorLight = hardwareMap.get(Servo.class, "ledIndicator");
 
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
@@ -157,6 +164,12 @@ public class DecodeTeleopTesting extends OpMode {
             telemetry.addData("Yaw","%3.0f degrees", goalTag.ftcPose.yaw);
         } else {
             telemetry.addData("\n>","Drive using joysticks to find valid target\n");
+        }
+
+        if (goalTag != null) {
+            indicatorLight.setPosition(0.4);
+        } else {
+            indicatorLight.setPosition(0.0);
         }
 
         double driveSpeed, strafe, turn;
