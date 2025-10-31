@@ -59,11 +59,18 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
-         double rangeClose = 0.0;
-         double rangeFar = 1.0;
-         double rpmClose = 0.0;
-         double rpmFar = 1.0;
 
+         if (rangeInInches > 90) {
+             return 4010;
+         }
+
+         double rangeClose = 32.9;
+         double rangeFar = 69.1;
+         double rpmClose = 2500;
+         double rpmFar = 3250;
+
+         // y = mx + b
+         // b = y - mx
          double slope = (rpmFar - rpmClose) / (rangeFar - rangeClose);
          double intercept = rpmClose - slope * rangeClose;
 
