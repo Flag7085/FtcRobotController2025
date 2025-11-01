@@ -39,11 +39,14 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
@@ -71,8 +74,16 @@ import java.util.List;
 
 @SuppressLint("DefaultLocale")
 @Config
-@TeleOp(name = "--Test-- Decode Teleop", group = "Robot")
-public class DecodeTeleopTesting extends OpMode {
+@TeleOp(name = "Decode Teleop", group = "Robot")
+public class DecodeTeleop extends OpMode {
+
+    public static boolean UPDATE_FLYWHEEL_PID = true;
+    public static double FLYWHEEL_P = 0;
+    public static double FLYWHEEL_I = 0;
+    public static double FLYWHEEL_D = 0;
+    public static double FLYWHEEL_F = 0;
+
+
     public static double SHOOTER_SPEED_RPM = 3000;
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
@@ -80,9 +91,9 @@ public class DecodeTeleopTesting extends OpMode {
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
     // public static double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
     // public static double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
-    public static double TURN_GAIN   =  0.01  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    public static double TURN_GAIN   =  0.02  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
-    public static double BEARING_THRESHOLD = 0.5; // Angled towards the tag (degrees)
+    public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
 
     public static double DRIVE_SPEED = 0.7;
     public static double TURN_SPEED = 0.5;
@@ -112,13 +123,29 @@ public class DecodeTeleopTesting extends OpMode {
     FeederSubsystem feederSubsystem;
     IntakeSubsystem intakeSubsystem;
 
+    Alliance alliance = null;
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
-        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem);
+        PIDFCoefficients c = shooterSubsystem.getPIDF();
+
+        if (UPDATE_FLYWHEEL_PID) {
+            FLYWHEEL_P = c.p;
+            FLYWHEEL_I = c.i;
+            FLYWHEEL_D = c.d;
+            FLYWHEEL_F = c.f;
+        }
+        telemetry.addData("Flywheel P", FLYWHEEL_P);
+        telemetry.addData("Flywheel I", FLYWHEEL_I);
+        telemetry.addData("Flywheel D", FLYWHEEL_D);
+        telemetry.addData("Flywheel F", FLYWHEEL_P);
+
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
+        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
+
 
         indicatorLight = hardwareMap.get(Servo.class, "ledIndicator");
 
@@ -134,12 +161,22 @@ public class DecodeTeleopTesting extends OpMode {
         telemetry.addData("DS preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start OpMode");
 
-        drive = new MecanumDrive(hardwareMap, new Pose2d(0,0,0));
+        Pose2d startingPose = new Pose2d(0,0,0);
+        if ((boolean)blackboard.getOrDefault(Constants.USE_POSE_FROM_AUTO, false)) {
+            alliance = (Alliance) blackboard.get(Constants.ALLIANCE);
+            blackboard.put(Constants.ALLIANCE, null);
+
+            startingPose = (Pose2d)blackboard.get(Constants.POSE_FROM_AUTO);
+            blackboard.put(Constants.USE_POSE_FROM_AUTO, false);
+        }
+
+        drive = new MecanumDrive(hardwareMap, startingPose);
         imu = drive.lazyImu.get();
     }
 
     @Override
     public void loop() {
+        pidTuner();
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
@@ -213,12 +250,14 @@ public class DecodeTeleopTesting extends OpMode {
             feederSubsystem.stop();
         }
 
-        if (gamepad1.left_trigger > 0.5) {
-            intakeSubsystem.start();
-        } else if (gamepad1.right_trigger > 0.5) {
-            intakeSubsystem.reverse();
-        } else {
-            intakeSubsystem.stop();
+        if (!gamepad2.cross) {
+            if (gamepad1.left_trigger > 0.5) {
+                intakeSubsystem.start();
+            } else if (gamepad1.right_bumper) {
+                intakeSubsystem.reverse();
+            } else {
+                intakeSubsystem.stop();
+            }
         }
 
         telemetry.addLine("Press triangle to reset Yaw");
@@ -235,6 +274,17 @@ public class DecodeTeleopTesting extends OpMode {
         }
 
         driveFieldRelative(driveSpeed, strafe, turn);
+    }
+
+    private void pidTuner() {
+        if (UPDATE_FLYWHEEL_PID) {
+            PIDFCoefficients c = new PIDFCoefficients(FLYWHEEL_P, FLYWHEEL_I, FLYWHEEL_D, FLYWHEEL_F);
+            shooterSubsystem.setPIDF(c);
+        }
+        telemetry.addData("Flywheel P", FLYWHEEL_P);
+        telemetry.addData("Flywheel I", FLYWHEEL_I);
+        telemetry.addData("Flywheel D", FLYWHEEL_D);
+        telemetry.addData("Flywheel F", FLYWHEEL_P);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
@@ -262,9 +312,16 @@ public class DecodeTeleopTesting extends OpMode {
         double theta = Math.atan2(forward, right);
         double r = Math.hypot(right, forward);
 
+        double headingOffset = 0;
+        if (alliance == Alliance.RED) {
+            headingOffset = -90;
+        } else if (alliance == Alliance.BLUE) {
+            headingOffset = 90;
+        }
+
         // Second, rotate angle by the angle the robot is pointing
         theta = AngleUnit.normalizeRadians(
-                theta - drive.localizer.getPose().heading.toDouble());
+                theta - drive.localizer.getPose().heading.toDouble() - headingOffset);
 //        theta = AngleUnit.normalizeRadians(theta -
 //                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 

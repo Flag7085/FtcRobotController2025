@@ -29,12 +29,27 @@ public class FeederSubsystem {
     public static double TRIGGER_DELAY_TIME_MS = 250;
     public static double TRIGGER_RPM_THRESHOLD = -100;
 
+    long triggerCount = 0;
     DcMotorEx feederWheel;
     Telemetry telemetry;
 
+    IntakeSubsystem intakeSubsystem;
     ShooterSubsystem shooterSubsystem;
 
-    public FeederSubsystem(HardwareMap hardwareMap, Telemetry telemetry, ShooterSubsystem shooterSubsystem) {
+    public FeederSubsystem(
+            HardwareMap hardwareMap,
+            Telemetry telemetry,
+            ShooterSubsystem shooterSubsystem
+    ) {
+        this(hardwareMap, telemetry, shooterSubsystem, null);
+    }
+
+    public FeederSubsystem(
+            HardwareMap hardwareMap,
+            Telemetry telemetry,
+            ShooterSubsystem shooterSubsystem,
+            IntakeSubsystem intakeSubsystem
+    ) {
         this.feederWheel = hardwareMap.get(DcMotorEx.class, "kicker");
         feederWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         feederWheel.setDirection(FEEDER_DIRECTION);
@@ -43,13 +58,20 @@ public class FeederSubsystem {
         this.telemetry = telemetry;
 
         this.shooterSubsystem = shooterSubsystem;
+        this.intakeSubsystem = intakeSubsystem;
     }
 
     public void start() {
         if (shooterSubsystem.atTargetRpm()) {
             feederWheel.setPower(FEEDER_SPEED);
+            if (intakeSubsystem != null) {
+                intakeSubsystem.start();
+            }
         } else {
             stop();
+            if (intakeSubsystem != null) {
+                intakeSubsystem.stop();
+            }
         }
     }
 
@@ -80,6 +102,8 @@ public class FeederSubsystem {
                 boolean shotDetected = rpmChange < TRIGGER_RPM_THRESHOLD;
 
                 if (shotDetected && !delayStopwatch.isStarted()) {
+                    telemetry.addData("Triggered", ++triggerCount);
+                    telemetryPacket.put("Triggered", triggerCount);
                     delayStopwatch.start();
                 } else if ((runtimeStopwatch.checkTimeMs() >= 3000) || (
                                 delayStopwatch.isStarted() &&

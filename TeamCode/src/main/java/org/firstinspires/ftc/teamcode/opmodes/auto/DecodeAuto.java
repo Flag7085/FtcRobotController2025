@@ -1,40 +1,22 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.IdentityPoseMap;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.Pose2dDual;
 import com.acmerobotics.roadrunner.PoseMap;
 import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.Vector2dDual;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public abstract class DecodeAuto extends LinearOpMode {
-
-    public enum Alliance {
-        BLUE(pose ->
-                new Pose2dDual<>(
-                        new Vector2dDual<>(
-                                pose.position.x,
-                                pose.position.y.unaryMinus()),
-                        pose.heading.inverse())),
-        RED(new IdentityPoseMap());
-
-        final private PoseMap poseMap;
-
-        Alliance(PoseMap poseMap) {
-            this.poseMap = poseMap;
-        }
-
-        public PoseMap getPoseMap() {
-            return poseMap;
-        }
-    }
 
     private Alliance alliance;
     protected Pose2d beginPose;
@@ -56,11 +38,21 @@ public abstract class DecodeAuto extends LinearOpMode {
     protected abstract void runAuto();
 
     private void initialzeCore() {
+        blackboard.put(Constants.ALLIANCE, alliance);
+
         drive = new MecanumDrive(hardwareMap, beginPose);
+        blackboard.put(Constants.USE_POSE_FROM_AUTO, true);
+        blackboard.put(Constants.POSE_FROM_AUTO, beginPose);
+
         intake = new IntakeSubsystem(hardwareMap, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
         feeder = new FeederSubsystem(hardwareMap, telemetry, shooter);
         initialize();
+    }
+
+    private void initializeTelemetryKeys() {
+        telemetry.addData("Triggered", 0);
+        telemetry.addData("Flywheel RPM Change", 0);
     }
 
     protected Action shootingActionSequence() {
@@ -87,10 +79,16 @@ public abstract class DecodeAuto extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         initialzeCore();
+        initializeTelemetryKeys();
         waitForStart();
         if (isStopRequested()) {
             return;
         }
-        runAuto();
+        try {
+            runAuto();
+        } finally {
+            blackboard.put(Constants.POSE_FROM_AUTO, drive.localizer.getPose());
+        }
+
     }
 }

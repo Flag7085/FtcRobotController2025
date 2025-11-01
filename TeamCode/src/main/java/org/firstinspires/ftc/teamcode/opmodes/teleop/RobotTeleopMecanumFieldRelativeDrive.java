@@ -37,6 +37,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -69,7 +70,8 @@ import java.util.List;
  *
  */
 @SuppressLint("DefaultLocale")
-@Config
+//@Config
+@Disabled
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class RobotTeleopMecanumFieldRelativeDrive extends OpMode {
     public static double SHOOTER_SPEED = 0.5;

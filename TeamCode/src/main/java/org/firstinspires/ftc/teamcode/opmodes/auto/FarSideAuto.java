@@ -7,6 +7,8 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import org.firstinspires.ftc.teamcode.opmodes.Alliance;
+
 public class FarSideAuto extends DecodeAuto {
 
     public static double SHOOTER_RPM_TARGET = 5000;

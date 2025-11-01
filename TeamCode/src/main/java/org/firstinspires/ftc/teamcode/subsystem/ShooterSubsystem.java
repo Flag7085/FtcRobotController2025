@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -39,6 +40,15 @@ public class ShooterSubsystem {
          shooterWheel2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
      }
 
+     public PIDFCoefficients getPIDF() {
+         return shooterWheel.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+     }
+
+     public void setPIDF(PIDFCoefficients c) {
+         shooterWheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, c);
+         shooterWheel2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, c);
+     }
+
      public void loop() {
          telemetry.addData("Current Speed (RPM): ", getRpm());
      }
@@ -66,8 +76,8 @@ public class ShooterSubsystem {
 
          double rangeClose = 32.9;
          double rangeFar = 69.1;
-         double rpmClose = 2500;
-         double rpmFar = 3250;
+         double rpmClose = 2525;
+         double rpmFar = 3275;
 
          // y = mx + b
          // b = y - mx

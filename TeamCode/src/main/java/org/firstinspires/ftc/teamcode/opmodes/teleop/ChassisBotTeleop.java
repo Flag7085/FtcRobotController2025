@@ -38,6 +38,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -71,7 +72,8 @@ import java.util.List;
  *
  */
 @SuppressLint("DefaultLocale")
-@Config
+//@Config
+@Disabled
 @TeleOp(name = "ChassisBot Driving", group = "Robot")
 public class ChassisBotTeleop extends OpMode {
     public static double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
