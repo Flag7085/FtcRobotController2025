@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseMap;
@@ -14,12 +13,11 @@ import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public abstract class DecodeAuto extends LinearOpMode {
 
-    private Alliance alliance;
-    protected Pose2d beginPose;
+    private final Alliance alliance;
+    protected final Pose2d beginPose;
+    protected final Pose2d mappedBeginPose;
     protected MecanumDrive drive;
     protected IntakeSubsystem intake;
     protected ShooterSubsystem shooter;
@@ -28,6 +26,7 @@ public abstract class DecodeAuto extends LinearOpMode {
     protected DecodeAuto(Alliance alliance, Pose2d beginPose) {
         this.alliance = alliance;
         this.beginPose = beginPose;
+        this.mappedBeginPose = alliance.transformPose(beginPose);
     }
 
     protected PoseMap poseMap() {
@@ -40,9 +39,9 @@ public abstract class DecodeAuto extends LinearOpMode {
     private void initialzeCore() {
         blackboard.put(Constants.ALLIANCE, alliance);
 
-        drive = new MecanumDrive(hardwareMap, beginPose);
+        drive = new MecanumDrive(hardwareMap, mappedBeginPose);
         blackboard.put(Constants.USE_POSE_FROM_AUTO, true);
-        blackboard.put(Constants.POSE_FROM_AUTO, beginPose);
+        blackboard.put(Constants.POSE_FROM_AUTO, mappedBeginPose);
 
         intake = new IntakeSubsystem(hardwareMap, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);

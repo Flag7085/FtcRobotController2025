@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 
 public class FarSideAuto extends DecodeAuto {
 
-    public static double SHOOTER_RPM_TARGET = 5000;
+    public static double SHOOTER_RPM_TARGET = 4000;
 
     TrajectoryActionBuilder start;
     TrajectoryActionBuilder pickUpBackRow;
@@ -19,7 +19,7 @@ public class FarSideAuto extends DecodeAuto {
     TrajectoryActionBuilder parkOutsideLaunchZone;
 
     protected FarSideAuto(Alliance alliance) {
-        super(alliance, new Pose2d(63, 16, Math.toRadians(180)));
+        super(alliance, new Pose2d(62, 18, Math.toRadians(180)));
     }
 
     @Autonomous(name = "Far, Red - Shoot 9")
@@ -41,8 +41,8 @@ public class FarSideAuto extends DecodeAuto {
         // Line up for first shot
         start = drive.actionBuilder(beginPose, poseMap())
                 .setReversed(false)
-                .setTangent(0)
-                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(160)), 0)
+                .setTangent(180)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(155)), 0)
                 .endTrajectory();
 
         // Pick up closest line of artifacts
@@ -55,21 +55,22 @@ public class FarSideAuto extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-25))
                 .endTrajectory();
 
         // Pick up artifacts from loading zone
         pickUpLoadingZone = pickUpBackRow.fresh()
                 .setReversed(false)
-                .splineTo(new Vector2d(48, 60), Math.toRadians(60))
+                .splineTo(new Vector2d(48, 61), Math.toRadians(60))
                 .setTangent(0)
                 // Intake
-                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
-                .afterDisp(14.0, intake.stopIntakeAction()) // Right at the end
-                .lineToX(62, ((pose2dDual, posePath, v) -> 10))
+                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
+                .afterDisp(20.0, intake.stopIntakeAction()) // Right at the end of next lineToX
+                .lineToX(68, ((pose2dDual, posePath, v) -> 10))
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
+                .setTangent(Math.toRadians(-100))
+                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
                 .endTrajectory();
 
         // Move out of launch zone

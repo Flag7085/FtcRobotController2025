@@ -78,9 +78,9 @@ import java.util.List;
 public class DecodeTeleop extends OpMode {
 
     public static boolean UPDATE_FLYWHEEL_PID = true;
-    public static double FLYWHEEL_P = 0;
-    public static double FLYWHEEL_I = 0;
-    public static double FLYWHEEL_D = 0;
+    public static double FLYWHEEL_P = 20.0;
+    public static double FLYWHEEL_I = 1.0;
+    public static double FLYWHEEL_D = 1.5;
     public static double FLYWHEEL_F = 0;
 
 
@@ -132,20 +132,16 @@ public class DecodeTeleop extends OpMode {
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
         PIDFCoefficients c = shooterSubsystem.getPIDF();
 
-        if (UPDATE_FLYWHEEL_PID) {
+        if (!UPDATE_FLYWHEEL_PID) {
             FLYWHEEL_P = c.p;
             FLYWHEEL_I = c.i;
             FLYWHEEL_D = c.d;
             FLYWHEEL_F = c.f;
         }
-        telemetry.addData("Flywheel P", FLYWHEEL_P);
-        telemetry.addData("Flywheel I", FLYWHEEL_I);
-        telemetry.addData("Flywheel D", FLYWHEEL_D);
-        telemetry.addData("Flywheel F", FLYWHEEL_P);
+        pidTuner();
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
         feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
-
 
         indicatorLight = hardwareMap.get(Servo.class, "ledIndicator");
 
@@ -280,11 +276,12 @@ public class DecodeTeleop extends OpMode {
         if (UPDATE_FLYWHEEL_PID) {
             PIDFCoefficients c = new PIDFCoefficients(FLYWHEEL_P, FLYWHEEL_I, FLYWHEEL_D, FLYWHEEL_F);
             shooterSubsystem.setPIDF(c);
+            UPDATE_FLYWHEEL_PID = false;
         }
         telemetry.addData("Flywheel P", FLYWHEEL_P);
         telemetry.addData("Flywheel I", FLYWHEEL_I);
         telemetry.addData("Flywheel D", FLYWHEEL_D);
-        telemetry.addData("Flywheel F", FLYWHEEL_P);
+        telemetry.addData("Flywheel F", FLYWHEEL_F);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {

@@ -14,7 +14,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 public class ShooterSubsystem {
     public static DcMotorSimple.Direction SHOOTER_DIRECTION = DcMotorSimple.Direction.FORWARD;
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
-    public static double TARGET_TOLERANCE = 50;
+    public static double TARGET_TOLERANCE = 40;
 
     double targetRPM = 0;
 
