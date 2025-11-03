@@ -207,11 +207,13 @@ public class DecodeTeleop extends OpMode {
 
         double driveSpeed, strafe, turn;
 
+        double driveMultiplier = gamepad1.left_stick_button ? 0.95 : DRIVE_SPEED;
+
         if (gamepad1.circle && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
 
-            driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
-            strafe = gamepad1.left_stick_x  * DRIVE_SPEED;
+            driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
+            strafe = gamepad1.left_stick_x  * driveMultiplier;
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
                 telemetry.addData("Auto", "Robot aligned with AprilTag!");
@@ -221,8 +223,8 @@ public class DecodeTeleop extends OpMode {
             telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             // Manual control section
-            driveSpeed = -gamepad1.left_stick_y * DRIVE_SPEED;
-            strafe = gamepad1.left_stick_x  * DRIVE_SPEED;
+            driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
+            strafe = gamepad1.left_stick_x  * driveMultiplier;
             turn   = gamepad1.right_stick_x * TURN_SPEED;
             telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
