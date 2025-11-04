@@ -42,7 +42,7 @@ public class FarSideAuto extends DecodeAuto {
         start = drive.actionBuilder(beginPose, poseMap())
                 .setReversed(false)
                 .setTangent(180)
-                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(155)), 0)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(158)), 0)
                 .endTrajectory();
 
         // Pick up closest line of artifacts
@@ -55,7 +55,7 @@ public class FarSideAuto extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-25))
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-22))
                 .endTrajectory();
 
         // Pick up artifacts from loading zone
@@ -70,7 +70,7 @@ public class FarSideAuto extends DecodeAuto {
                 // Line up to shoot
                 .setReversed(true)
                 .setTangent(Math.toRadians(-100))
-                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
+                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(158)), Math.toRadians(-80))
                 .endTrajectory();
 
         // Move out of launch zone
