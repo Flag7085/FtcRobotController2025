@@ -50,4 +50,12 @@ public class IntakeSubsystem {
         };
     }
 
+    public Action reveseIntakeAction() {
+        return telemetryPacket -> {
+            reverse();
+            return false;
+        };
+
+    }
+
 }

@@ -60,7 +60,7 @@ public abstract class DecodeAuto extends LinearOpMode {
                 intake.startIntakeAction(),
                 feeder.shootOne(),
                 feeder.shootOne(),
-                intake.stopIntakeAction()
+                intake.reveseIntakeAction()
         );
     }
 
