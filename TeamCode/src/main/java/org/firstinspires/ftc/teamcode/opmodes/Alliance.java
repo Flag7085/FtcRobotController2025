@@ -18,10 +18,14 @@ public enum Alliance {
             (Pose2d p) -> new Pose2d(
                     p.position.x,
                     -1 * p.position.y,
-                    p.heading.inverse().toDouble())),
+                    p.heading.inverse().toDouble()),
+            20
+    ),
     RED(
             new IdentityPoseMap(),
-            (Pose2d p) -> p);
+            (Pose2d p) -> p,
+            24
+    );
 
     // For RoadRunner trajectories
     final private PoseMap poseMap;
@@ -29,9 +33,17 @@ public enum Alliance {
     // For mapping the MecanumDrive's starting pose
     final private Function<Pose2d, Pose2d> poseTransform;
 
-    Alliance(PoseMap poseMap, Function<Pose2d, Pose2d> poseTransform) {
+    // What ID is the april tag for this alliance's goal?
+    final private int goalAprilTagId;
+
+    Alliance(
+            PoseMap poseMap,
+            Function<Pose2d, Pose2d> poseTransform,
+            int goalAprilTagId
+    ) {
         this.poseMap = poseMap;
         this.poseTransform = poseTransform;
+        this.goalAprilTagId = goalAprilTagId;
     }
 
     public PoseMap getPoseMap() {
@@ -40,5 +52,9 @@ public enum Alliance {
 
     public Pose2d transformPose(Pose2d p) {
         return poseTransform.apply(p);
+    }
+
+    public int getGoalAprilTagId() {
+        return goalAprilTagId;
     }
 }

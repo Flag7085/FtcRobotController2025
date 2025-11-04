@@ -56,6 +56,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
+import java.util.Set;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -102,7 +103,13 @@ public class DecodeTeleop extends OpMode {
      * The variable to store our instance of the AprilTag processor.
      */
     private AprilTagProcessor aprilTag;
-    private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
+
+    // If we don't have a specific Alliance, then we will use this set
+    // to match either alliance goal for targeting.
+    private static final Set<Integer> GOAL_TAGS = Set.of(
+            Alliance.BLUE.getGoalAprilTagId(),
+            Alliance.RED.getGoalAprilTagId()
+    );
 
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
@@ -413,14 +420,14 @@ public class DecodeTeleop extends OpMode {
         for (AprilTagDetection detection : detections) {
             // Look to see if we have size info on this tag.
             if (detection.metadata != null) {
-                //  Check to see if we want to track towards this tag.
-                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
-                    // Yes, we want to use this tag.
+                if (alliance != null && detection.id == alliance.getGoalAprilTagId()) {
                     return detection;
-                } else {
-                    // This tag is in the library, but we do not want to track it right now.
-                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
                 }
+                if (alliance == null && GOAL_TAGS.contains(detection.id)) {
+                    return detection;
+                }
+                // This tag is in the library, but we do not want to track it right now.
+                telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
             } else {
                 // This tag is NOT in the library, so we don't have enough information to track to it.
                 telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
