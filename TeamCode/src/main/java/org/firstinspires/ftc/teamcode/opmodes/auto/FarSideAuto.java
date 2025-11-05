@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.RaceAction;
 import com.acmerobotics.roadrunner.SequentialAction;
+import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
@@ -9,9 +12,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 
+@Config
 public class FarSideAuto extends DecodeAuto {
 
-    public static double SHOOTER_RPM_TARGET = 4000;
+    public static double SHOOTER_RPM_TARGET = 3990;
 
     TrajectoryActionBuilder start;
     TrajectoryActionBuilder pickUpBackRow;
@@ -42,7 +46,7 @@ public class FarSideAuto extends DecodeAuto {
         start = drive.actionBuilder(beginPose, poseMap())
                 .setReversed(false)
                 .setTangent(180)
-                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(158)), 0)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(160)), 0)
                 .endTrajectory();
 
         // Pick up closest line of artifacts
@@ -55,7 +59,7 @@ public class FarSideAuto extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
                 // Line up to shoot
                 .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-22))
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
                 .endTrajectory();
 
         // Pick up artifacts from loading zone
@@ -70,7 +74,7 @@ public class FarSideAuto extends DecodeAuto {
                 // Line up to shoot
                 .setReversed(true)
                 .setTangent(Math.toRadians(-100))
-                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(158)), Math.toRadians(-80))
+                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(160)), Math.toRadians(-80))
                 .endTrajectory();
 
         // Move out of launch zone
@@ -83,8 +87,14 @@ public class FarSideAuto extends DecodeAuto {
     @Override
     public void runAuto() {
         Actions.runBlocking(
+            new RaceAction(
+                // This action will run forever, so the RaceAction will terminate when
+                // the below sequence terminates.  Loop updates go first, so that our
+                // action sequence below operates on the most up-to-date data available.
+                shooter.updateForeverAction(),
                 new SequentialAction(
                         shooter.setRpmAction(SHOOTER_RPM_TARGET),
+                        new SleepAction(0.5),
                         start.build(),
                         shootingActionSequence(),
                         pickUpBackRow.build(),
@@ -93,6 +103,7 @@ public class FarSideAuto extends DecodeAuto {
                         shootingActionSequence(),
                         parkOutsideLaunchZone.build()
                 )
+            )
         );
     }
 }

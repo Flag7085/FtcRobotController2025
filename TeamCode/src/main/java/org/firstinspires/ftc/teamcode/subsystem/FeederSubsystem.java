@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.util.RPMTracker;
 import org.firstinspires.ftc.teamcode.util.Stopwatch;
 import org.firstinspires.ftc.teamcode.util.TrackingWindow;
 
@@ -29,7 +30,10 @@ public class FeederSubsystem {
     public static double TRIGGER_DELAY_TIME_MS = 250;
     public static double TRIGGER_RPM_THRESHOLD = -100;
 
+    public static double TRIGGER_RPM_THRESHOLD_V2 = -100;
+
     long triggerCount = 0;
+    long triggerCountV2 = 0;
     DcMotorEx feederWheel;
     Telemetry telemetry;
 
@@ -85,25 +89,51 @@ public class FeederSubsystem {
             final Stopwatch delayStopwatch = new Stopwatch();
             final Stopwatch runtimeStopwatch = new Stopwatch();
 
+            boolean thresholdTriggered = false;
+
+            private boolean shotDetected(TelemetryPacket telemetryPacket) {
+                double currentRpm = shooterSubsystem.getRpm();
+                trackingWindow.addMeasurement(currentRpm);
+
+                double rpmChange = currentRpm - trackingWindow.oldestMeasurement();
+                telemetryPacket.put("Flywheel RPM Change", rpmChange);
+
+                // Look for sharp deceleration in flywheel to indicate a shot
+                return rpmChange < TRIGGER_RPM_THRESHOLD;
+            }
+
+            boolean shotDetectedV2(TelemetryPacket telemetryPacket) {
+                RPMTracker.Point p = shooterSubsystem.getRpmTracker()
+                        .computeCurrentPeakToTroughDrop();
+                if (thresholdTriggered && p.rpm >= 0) {
+                    // Passed the threshold and no longer decreasing.  Reset and return triggered.
+                    thresholdTriggered = false;
+                    return true;
+                } else if (p.rpm <= TRIGGER_RPM_THRESHOLD_V2){
+                    // Track that we've passed the threshold, but for timing's sake, don't
+                    // return a trigger until we've stopped decreasing, so that the next
+                    // shot attempt doesn't immediately re-trigger.
+                    thresholdTriggered = true;
+                }
+                return false;
+            }
+
             @Override
             public boolean run(@NonNull TelemetryPacket telemetryPacket) {
                 if (!runtimeStopwatch.isStarted()) {
                     runtimeStopwatch.start();
                 }
 
-                double currentRpm = shooterSubsystem.getRpm();
-                trackingWindow.addMeasurement(currentRpm);
-
-                double rpmChange = currentRpm - trackingWindow.oldestMeasurement();
-                telemetryPacket.put("Flywheel RPM Change", rpmChange);
-                telemetry.addData("Flywheel RPM Change", rpmChange);
-
                 // Look for sharp deceleration in flywheel to indicate a shot
-                boolean shotDetected = rpmChange < TRIGGER_RPM_THRESHOLD;
+                boolean shotDetected = shotDetected(telemetryPacket);
+                boolean shotDetectedV2 = shotDetectedV2(telemetryPacket);
+
+                if (shotDetectedV2) {
+                    triggerCountV2++;
+                }
 
                 if (shotDetected && !delayStopwatch.isStarted()) {
-                    telemetry.addData("Triggered", ++triggerCount);
-                    telemetryPacket.put("Triggered", triggerCount);
+                    triggerCount++;
                     delayStopwatch.start();
                 } else if ((runtimeStopwatch.checkTimeMs() >= 3000) || (
                                 delayStopwatch.isStarted() &&
@@ -111,6 +141,9 @@ public class FeederSubsystem {
                     stop();
                     return false;
                 }
+                telemetryPacket.put("Triggered", triggerCount);
+                telemetryPacket.put("Triggered V2", triggerCountV2);
+
                 start();
                 return true;
             }

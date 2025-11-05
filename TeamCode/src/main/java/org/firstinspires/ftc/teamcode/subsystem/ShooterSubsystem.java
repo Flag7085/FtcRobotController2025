@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -9,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
 public class ShooterSubsystem {
@@ -18,10 +20,12 @@ public class ShooterSubsystem {
 
     double targetRPM = 0;
 
-     DcMotorEx shooterWheel;
-     DcMotorEx shooterWheel2;
+    DcMotorEx shooterWheel;
+    DcMotorEx shooterWheel2;
 
-     Telemetry telemetry;
+    Telemetry telemetry;
+
+    private RPMTracker rpmTracker;
 
      public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
          this.telemetry = telemetry;
@@ -38,6 +42,8 @@ public class ShooterSubsystem {
              shooterWheel2.setDirection(DcMotorSimple.Direction.FORWARD);
          }
          shooterWheel2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+         rpmTracker = new RPMTracker();
      }
 
      public PIDFCoefficients getPIDF() {
@@ -49,8 +55,38 @@ public class ShooterSubsystem {
          shooterWheel2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, c);
      }
 
+     public RPMTracker getRpmTracker() {
+         return rpmTracker;
+     }
+
+
      public void loop() {
-         telemetry.addData("Current Speed (RPM): ", getRpm());
+         loop(null);
+     }
+
+     public void loop(TelemetryPacket p) {
+         double currentRpm = getRpm();
+         rpmTracker.addPoint(System.currentTimeMillis(), currentRpm);
+         double currentSmoothedRpm = rpmTracker.currentSmoothedRpm().rpm;
+         RPMTracker.Point rpmDrop = rpmTracker.computeCurrentPeakToTroughDrop();
+
+         if (p != null) {
+             p.put("Flywheel Speed (Raw RPM)", currentRpm);
+             p.put("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
+             p.put("Flywheel Drop (RPM)", rpmDrop.rpm);
+             p.put("Flywheel Drop (Rate)",
+                     rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
+             p.put("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
+             p.put("Flywheel Target RPM", targetRPM);
+         } else {
+             telemetry.addData("Flywheel Speed (Raw RPM)", currentRpm);
+             telemetry.addData("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
+             telemetry.addData("Flywheel Drop RPM", rpmDrop.rpm);
+             telemetry.addData("Flywheel Drop Rate",
+                     rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
+             telemetry.addData("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
+             telemetry.addData("Flywheel Target RPM", targetRPM);
+         }
      }
 
      public boolean atTargetRpm() {
@@ -69,7 +105,7 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
-         rangeInInches += 12;
+         rangeInInches += 0;
 
          if (rangeInInches > 90) {
              return 4010;
@@ -92,6 +128,18 @@ public class ShooterSubsystem {
          return telemetryPacket -> {
              setRPM(rpm);
              return false;
+         };
+     }
+
+    /**
+     * Performs tracking updates every "loop", running forever.
+     * This is meant to be used in parallel with other actions,
+     * such as the RaceAction
+     */
+     public Action updateForeverAction() {
+         return telemetryPacket -> {
+             loop(telemetryPacket);
+             return true;
          };
      }
 
