@@ -69,6 +69,7 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
+         rangeInInches += 12;
 
          if (rangeInInches > 90) {
              return 4010;
