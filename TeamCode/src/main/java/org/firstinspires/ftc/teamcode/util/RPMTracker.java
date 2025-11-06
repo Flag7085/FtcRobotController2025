@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode.util;
 
+import com.acmerobotics.dashboard.config.Config;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 
+@Config
 public class RPMTracker {
 
     public static int MOVING_AVG_WINDOW = 4;

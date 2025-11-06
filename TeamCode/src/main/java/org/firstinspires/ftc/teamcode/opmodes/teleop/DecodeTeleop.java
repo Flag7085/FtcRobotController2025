@@ -38,7 +38,6 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
@@ -120,8 +119,9 @@ public class DecodeTeleop extends OpMode {
      */
     private VisionPortal visionPortal;
 
+    // No IMU - We use Pinpoint, which is integrated with the MecanumDrive class.
     // This declares the IMU needed to get the current direction the robot is facing
-    IMU imu;
+    // IMU imu;
     MecanumDrive drive;  // Add Roadrunner drive object
 
     ShooterSubsystem shooterSubsystem;
@@ -172,7 +172,7 @@ public class DecodeTeleop extends OpMode {
         }
 
         drive = new MecanumDrive(hardwareMap, startingPose);
-        imu = drive.lazyImu.get();
+        // imu = drive.lazyImu.get();
     }
 
     @Override
@@ -182,10 +182,10 @@ public class DecodeTeleop extends OpMode {
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
-        telemetry.addData("IMU Angle",
-                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-        telemetry.addData("IMU Velocity",
-                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
+//        telemetry.addData("IMU Angle",
+//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
+//        telemetry.addData("IMU Velocity",
+//                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
 
         // TODO - set and read angular velocity
 
@@ -266,7 +266,7 @@ public class DecodeTeleop extends OpMode {
         // If you press the A button, then you reset the Yaw to be zero from the way
         // the robot is currently pointing
         if (gamepad1.triangle) {
-            imu.resetYaw();
+            //imu.resetYaw();
             Pose2d currentPose = drive.localizer.getPose();
             drive.localizer.setPose(new Pose2d(0, 0, 0.0));
         }
