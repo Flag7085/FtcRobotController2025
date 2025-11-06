@@ -75,7 +75,10 @@ public class MeepMeepTesting {
                 .waitSeconds(2)
                 .splineTo(new Vector2d( -11, 20), Math.toRadians(90))
                  .lineToY( 50)
-
+                .waitSeconds(2)
+                .splineTo(new Vector2d( -36, 36), Math.toRadians(135))
+                .waitSeconds(2)
+                .splineTo(new Vector2d(-16, 29), Math.toRadians (180))
                 // MOVE away from launch zone
   //              .setTangent(Math.toRadians(90))
 //                .lineToY(34)
@@ -95,7 +98,7 @@ public class MeepMeepTesting {
                 .setStartPose(new Pose2d(0,0,0))
                 .setDimensions( 12,   18 )
                 // Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
-                .setConstraints(60, 60, Math.toRadians(180), Math.toRadians(180), 15)
+                .setConstraints(100, 100, Math.toRadians(180), Math.toRadians(180), 15)
                 .build();
 
         myBot.runAction(dev(myBot)); // change this to dev(myBot) to run your test!
