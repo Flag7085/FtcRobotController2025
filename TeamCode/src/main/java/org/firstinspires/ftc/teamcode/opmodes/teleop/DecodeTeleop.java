@@ -137,12 +137,13 @@ public class DecodeTeleop extends OpMode {
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
         PIDFCoefficients c = shooterSubsystem.getPIDF();
 
-        if (!UPDATE_FLYWHEEL_PID) {
-            Tuning.FLYWHEEL_P = c.p;
-            Tuning.FLYWHEEL_I = c.i;
-            Tuning.FLYWHEEL_D = c.d;
-            Tuning.FLYWHEEL_F = c.f;
-        }
+//        if (!UPDATE_FLYWHEEL_PID) {
+//            Tuning.FLYWHEEL_P = c.p;
+//            Tuning.FLYWHEEL_I = c.i;
+//            Tuning.FLYWHEEL_D = c.d;
+//            Tuning.FLYWHEEL_F = c.f;
+//        }
+        UPDATE_FLYWHEEL_PID = true;
         pidTuner();
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
