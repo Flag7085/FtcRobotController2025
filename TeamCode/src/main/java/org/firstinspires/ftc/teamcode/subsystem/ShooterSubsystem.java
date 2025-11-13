@@ -101,7 +101,7 @@ public class ShooterSubsystem {
      }
 
      public double getRpm() {
-         return shooterWheel.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION;
+         return shooterWheel2.getVelocity() * 60 / SHOOTER_TICKS_PER_REVOLUTION;
      }
 
      public double calculateRPMs(double rangeInInches) {
