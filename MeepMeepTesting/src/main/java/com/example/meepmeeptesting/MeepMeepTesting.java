@@ -154,6 +154,38 @@ public class MeepMeepTesting {
                 .build();
     }
 
+    public static Action build12ArtifactCloseAuto(RoadRunnerBotEntity bot) {
+        return bot
+                .getDrive()
+                .actionBuilder(new Pose2d(-63, 40, 0))
+
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(145))
+
+                .waitSeconds(4)
+
+                .splineTo(new Vector2d(-11, 25), Math.toRadians(90))
+                .lineToY(50)
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(145))
+
+                .waitSeconds(4)
+
+                .splineTo(new Vector2d(12,25), Math.toRadians(90))
+                .lineToY(50)
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(145))
+
+                .waitSeconds(4)
+
+                .splineTo(new Vector2d(36, 25), Math.toRadians(90))
+                .lineToY(50)
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(145))
+
+                .waitSeconds(4)
+
+                .splineTo(new Vector2d(-16, 50), Math.toRadians(180))
+                // TO DO: using the bot methods documented in our demo Action,
+                // develop your new test route here
+                .build();
+    }
     public static void main(String[] args) {
 
         MeepMeep meepMeep = new MeepMeep(800);
@@ -166,7 +198,7 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                buildFarSideAuto1(myBot)
+                build12ArtifactCloseAuto(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
@@ -175,4 +207,6 @@ public class MeepMeepTesting {
                 .addEntity(myBot)
                 .start();
     }
+
+
 }
