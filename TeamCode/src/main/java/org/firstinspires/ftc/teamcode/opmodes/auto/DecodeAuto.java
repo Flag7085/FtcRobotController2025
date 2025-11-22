@@ -49,12 +49,13 @@ public abstract class DecodeAuto extends LinearOpMode {
 
         intake = new IntakeSubsystem(hardwareMap, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
-        shooter.setPIDF(new PIDFCoefficients(
-                Tuning.FLYWHEEL_P,
-                Tuning.FLYWHEEL_I,
-                Tuning.FLYWHEEL_D,
-                Tuning.FLYWHEEL_F
-        ));
+        shooter.setCoefficients(
+                Tuning.FLYWHEEL_S2,
+                Tuning.FLYWHEEL_V2,
+                Tuning.FLYWHEEL_P2,
+                Tuning.FLYWHEEL_I2,
+                Tuning.FLYWHEEL_D2
+        );
         feeder = new FeederSubsystem(hardwareMap, telemetry, shooter);
         initialize();
     }

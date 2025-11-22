@@ -135,8 +135,6 @@ public class DecodeTeleop extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
-        PIDFCoefficients c = shooterSubsystem.getPIDF();
-
 //        if (!UPDATE_FLYWHEEL_PID) {
 //            Tuning.FLYWHEEL_P = c.p;
 //            Tuning.FLYWHEEL_I = c.i;
@@ -279,18 +277,21 @@ public class DecodeTeleop extends OpMode {
 
     private void pidTuner() {
         if (UPDATE_FLYWHEEL_PID) {
-            PIDFCoefficients c = new PIDFCoefficients(
-                    Tuning.FLYWHEEL_P,
-                    Tuning.FLYWHEEL_I,
-                    Tuning.FLYWHEEL_D,
-                    Tuning.FLYWHEEL_F);
-            shooterSubsystem.setPIDF(c);
+            shooterSubsystem.setCoefficients(
+                    Tuning.FLYWHEEL_S2,
+                    Tuning.FLYWHEEL_V2,
+                    Tuning.FLYWHEEL_P2,
+                    Tuning.FLYWHEEL_I2,
+                    Tuning.FLYWHEEL_D2
+            );
+
             UPDATE_FLYWHEEL_PID = false;
         }
-        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
-        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
-        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
-        telemetry.addData("Flywheel F", Tuning.FLYWHEEL_F);
+        telemetry.addData("Flywheel S", Tuning.FLYWHEEL_S2);
+        telemetry.addData("Flywheel V", Tuning.FLYWHEEL_V2);
+        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P2);
+        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I2);
+        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D2);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {

@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.subsystem;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.arcrobotics.ftclib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -19,6 +21,9 @@ public class ShooterSubsystem {
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
     public static double TARGET_TOLERANCE = 40;
 
+    PIDController pid;
+    SimpleMotorFeedforward feedforward;
+
     double targetRPM = 0;
 
     DcMotorEx shooterWheel;
@@ -31,18 +36,21 @@ public class ShooterSubsystem {
      public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
          this.telemetry = telemetry;
          shooterWheel = hardwareMap.get(DcMotorEx.class, "shooter");
-         shooterWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+         shooterWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
          shooterWheel.setDirection(SHOOTER_DIRECTION);
          shooterWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
          shooterWheel2 = hardwareMap.get(DcMotorEx.class, "shooter2");
-         shooterWheel2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+         shooterWheel2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
          if (SHOOTER_DIRECTION == DcMotorSimple.Direction.FORWARD) {
              shooterWheel2.setDirection(DcMotorSimple.Direction.REVERSE);
          } else {
              shooterWheel2.setDirection(DcMotorSimple.Direction.FORWARD);
          }
          shooterWheel2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+         pid = new PIDController(0, 0, 0);
+         feedforward = new SimpleMotorFeedforward(0, 0);
 
          rpmTracker = new RPMTracker();
      }
@@ -56,6 +64,23 @@ public class ShooterSubsystem {
          shooterWheel2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, c);
      }
 
+     public void setCoefficients (double ks, double kv, double kp, double ki, double kd) {
+         feedforward = new SimpleMotorFeedforward(ks, kv);
+         pid.setPID(kp, ki, kd);
+     }
+
+     public double[] getCoifficents(){
+         double[] c = new double[5];
+
+         c[0] = feedforward.ks;
+         c[1] = feedforward.kv;
+         c[2] = pid.getP();
+         c[3] = pid.getI();
+         c[4] = pid.getD();
+
+         return c;
+     }
+
      public RPMTracker getRpmTracker() {
          return rpmTracker;
      }
@@ -67,6 +92,11 @@ public class ShooterSubsystem {
 
      public void loop(TelemetryPacket p) {
          double currentRpm = getRpm();
+         double newPower = feedforward.calculate(targetRPM)
+                 + pid.calculate(currentRpm, targetRPM);
+         shooterWheel.setPower(newPower);
+         shooterWheel2.setPower(newPower);
+
          rpmTracker.addPoint(System.currentTimeMillis(), currentRpm);
          double currentSmoothedRpm = rpmTracker.currentSmoothedRpm().rpm;
          RPMTracker.Point rpmDrop = rpmTracker.computeCurrentPeakToTroughDrop();
@@ -102,9 +132,6 @@ public class ShooterSubsystem {
 
      public void setRPM(double rpm) {
          targetRPM = rpm;
-         double ticksPerSecond = rpm * SHOOTER_TICKS_PER_REVOLUTION / 60;
-         shooterWheel.setVelocity(ticksPerSecond);
-         shooterWheel2.setVelocity(ticksPerSecond);
      }
 
      public double getRpm() {
