@@ -71,6 +71,7 @@ public class ShooterSubsystem {
          double currentSmoothedRpm = rpmTracker.currentSmoothedRpm().rpm;
          RPMTracker.Point rpmDrop = rpmTracker.computeCurrentPeakToTroughDrop();
 
+
          if (p != null) {
              p.put("Flywheel Speed (Raw RPM)", currentRpm);
              p.put("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);

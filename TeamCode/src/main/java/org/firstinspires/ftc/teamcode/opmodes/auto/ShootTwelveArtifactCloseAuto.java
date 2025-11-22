@@ -43,6 +43,7 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
         // Line up for first shot
         start = drive.actionBuilder(beginPose, poseMap())
                 .setReversed(true)
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(-45))
                 .endTrajectory();
 
         // Go pick up first line of Artifacts and return to shoot
