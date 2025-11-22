@@ -5,8 +5,10 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseMap;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
@@ -14,6 +16,8 @@ import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 
 public abstract class DecodeAuto extends LinearOpMode {
+
+
 
     private final Alliance alliance;
     protected final Pose2d beginPose;
@@ -45,13 +49,23 @@ public abstract class DecodeAuto extends LinearOpMode {
 
         intake = new IntakeSubsystem(hardwareMap, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
+        shooter.setPIDF(new PIDFCoefficients(
+                Tuning.FLYWHEEL_P,
+                Tuning.FLYWHEEL_I,
+                Tuning.FLYWHEEL_D,
+                Tuning.FLYWHEEL_F
+        ));
         feeder = new FeederSubsystem(hardwareMap, telemetry, shooter);
         initialize();
     }
 
     private void initializeTelemetryKeys() {
+        shooter.loop();
+
+        // Logged by the Feeder ShootOne action...
         telemetry.addData("Triggered", 0);
-        telemetry.addData("Flywheel RPM Change", 0);
+        telemetry.addData("Triggered V2", 0);
+        telemetry.update();
     }
 
     protected Action shootingActionSequence() {

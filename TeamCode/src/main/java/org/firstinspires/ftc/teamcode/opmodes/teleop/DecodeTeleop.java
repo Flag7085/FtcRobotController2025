@@ -38,7 +38,6 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
@@ -46,6 +45,7 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
@@ -56,6 +56,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
+import java.util.Set;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -78,11 +79,8 @@ import java.util.List;
 public class DecodeTeleop extends OpMode {
 
     public static boolean UPDATE_FLYWHEEL_PID = true;
-    public static double FLYWHEEL_P = 20.0;
-    public static double FLYWHEEL_I = 1.0;
-    public static double FLYWHEEL_D = 1.5;
-    public static double FLYWHEEL_F = 0;
 
+    public static boolean ENABLE_DETAILED_APRIL_TAG_TELEMETRY = false;
 
     public static double SHOOTER_SPEED_RPM = 3000;
 
@@ -102,7 +100,13 @@ public class DecodeTeleop extends OpMode {
      * The variable to store our instance of the AprilTag processor.
      */
     private AprilTagProcessor aprilTag;
-    private static final int DESIRED_TAG_ID = -1;     // Choose the tag you want to approach or set to -1 for ANY tag.
+
+    // If we don't have a specific Alliance, then we will use this set
+    // to match either alliance goal for targeting.
+    private static final Set<Integer> GOAL_TAGS = Set.of(
+            Alliance.BLUE.getGoalAprilTagId(),
+            Alliance.RED.getGoalAprilTagId()
+    );
 
     // Adjust Image Decimation to trade-off detection-range for detection-rate.
     public static int  DECIMATION = 3;
@@ -115,8 +119,9 @@ public class DecodeTeleop extends OpMode {
      */
     private VisionPortal visionPortal;
 
+    // No IMU - We use Pinpoint, which is integrated with the MecanumDrive class.
     // This declares the IMU needed to get the current direction the robot is facing
-    IMU imu;
+    // IMU imu;
     MecanumDrive drive;  // Add Roadrunner drive object
 
     ShooterSubsystem shooterSubsystem;
@@ -132,12 +137,13 @@ public class DecodeTeleop extends OpMode {
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
         PIDFCoefficients c = shooterSubsystem.getPIDF();
 
-        if (!UPDATE_FLYWHEEL_PID) {
-            FLYWHEEL_P = c.p;
-            FLYWHEEL_I = c.i;
-            FLYWHEEL_D = c.d;
-            FLYWHEEL_F = c.f;
-        }
+//        if (!UPDATE_FLYWHEEL_PID) {
+//            Tuning.FLYWHEEL_P = c.p;
+//            Tuning.FLYWHEEL_I = c.i;
+//            Tuning.FLYWHEEL_D = c.d;
+//            Tuning.FLYWHEEL_F = c.f;
+//        }
+        UPDATE_FLYWHEEL_PID = true;
         pidTuner();
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
@@ -167,7 +173,7 @@ public class DecodeTeleop extends OpMode {
         }
 
         drive = new MecanumDrive(hardwareMap, startingPose);
-        imu = drive.lazyImu.get();
+        // imu = drive.lazyImu.get();
     }
 
     @Override
@@ -177,10 +183,10 @@ public class DecodeTeleop extends OpMode {
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
-        telemetry.addData("IMU Angle",
-                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-        telemetry.addData("IMU Velocity",
-                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
+//        telemetry.addData("IMU Angle",
+//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
+//        telemetry.addData("IMU Velocity",
+//                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
 
         // TODO - set and read angular velocity
 
@@ -190,7 +196,6 @@ public class DecodeTeleop extends OpMode {
 
         // Tell the driver what we see, and what to do.
         if (goalTag != null) {
-            telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
             telemetry.addData("Found", "ID %d (%s)", goalTag.id, goalTag.metadata.name);
             telemetry.addData("Range",  "%5.1f inches", goalTag.ftcPose.range);
             telemetry.addData("Bearing","%3.0f degrees", goalTag.ftcPose.bearing);
@@ -207,7 +212,7 @@ public class DecodeTeleop extends OpMode {
 
         double driveSpeed, strafe, turn;
 
-        double driveMultiplier = gamepad1.left_stick_button ? 0.95 : DRIVE_SPEED;
+        double driveMultiplier = gamepad1.left_stick_button ? 1.0 : DRIVE_SPEED;
 
         if (gamepad1.circle && goalTag != null) {
             double headingError = -goalTag.ftcPose.bearing;
@@ -216,30 +221,29 @@ public class DecodeTeleop extends OpMode {
             strafe = gamepad1.left_stick_x  * driveMultiplier;
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
-                telemetry.addData("Auto", "Robot aligned with AprilTag!");
+                telemetry.addData("AutoAim", "Auto: Robot aligned with AprilTag!");
             } else {
                 turn = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
             }
-            telemetry.addData("Auto", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             // Manual control section
             driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
             strafe = gamepad1.left_stick_x  * driveMultiplier;
             turn   = gamepad1.right_stick_x * TURN_SPEED;
-            telemetry.addData("Manual", "Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         }
 
         // Basic shooting logic
         double targetRPMs = SHOOTER_SPEED_RPM;
         if (goalTag != null) {
             targetRPMs = shooterSubsystem.calculateRPMs(goalTag.ftcPose.range);
-            telemetry.addData("calculateRPMs", targetRPMs);
         }
-        if (gamepad2.right_trigger > 0.5) {
-            shooterSubsystem.setRPM(targetRPMs);
-        } else {
-            shooterSubsystem.setRPM(0);
-        }
+        //if (gamepad2.right_trigger > 0.5) {
+        shooterSubsystem.setRPM(targetRPMs);
+        //} else {
+        //    shooterSubsystem.setRPM(0);
+        //}
         shooterSubsystem.loop();
 
         if (gamepad2.cross) {
@@ -251,7 +255,7 @@ public class DecodeTeleop extends OpMode {
         if (!gamepad2.cross) {
             if (gamepad1.left_trigger > 0.5) {
                 intakeSubsystem.start();
-            } else if (gamepad1.right_bumper) {
+            } else if (gamepad1.square) {
                 intakeSubsystem.reverse();
             } else {
                 intakeSubsystem.stop();
@@ -259,14 +263,11 @@ public class DecodeTeleop extends OpMode {
         }
 
         telemetry.addLine("Press triangle to reset Yaw");
-        telemetry.addLine("Hold right bumper to drive in robot relative");
-        telemetry.addLine("The left joystick sets the robot direction");
-        telemetry.addLine("Moving the right joystick left and right turns the robot");
 
         // If you press the A button, then you reset the Yaw to be zero from the way
         // the robot is currently pointing
         if (gamepad1.triangle) {
-            imu.resetYaw();
+            //imu.resetYaw();
             Pose2d currentPose = drive.localizer.getPose();
             drive.localizer.setPose(new Pose2d(0, 0, 0.0));
         }
@@ -276,14 +277,18 @@ public class DecodeTeleop extends OpMode {
 
     private void pidTuner() {
         if (UPDATE_FLYWHEEL_PID) {
-            PIDFCoefficients c = new PIDFCoefficients(FLYWHEEL_P, FLYWHEEL_I, FLYWHEEL_D, FLYWHEEL_F);
+            PIDFCoefficients c = new PIDFCoefficients(
+                    Tuning.FLYWHEEL_P,
+                    Tuning.FLYWHEEL_I,
+                    Tuning.FLYWHEEL_D,
+                    Tuning.FLYWHEEL_F);
             shooterSubsystem.setPIDF(c);
             UPDATE_FLYWHEEL_PID = false;
         }
-        telemetry.addData("Flywheel P", FLYWHEEL_P);
-        telemetry.addData("Flywheel I", FLYWHEEL_I);
-        telemetry.addData("Flywheel D", FLYWHEEL_D);
-        telemetry.addData("Flywheel F", FLYWHEEL_F);
+        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
+        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
+        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
+        telemetry.addData("Flywheel F", Tuning.FLYWHEEL_F);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
@@ -413,17 +418,21 @@ public class DecodeTeleop extends OpMode {
         for (AprilTagDetection detection : detections) {
             // Look to see if we have size info on this tag.
             if (detection.metadata != null) {
-                //  Check to see if we want to track towards this tag.
-                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
-                    // Yes, we want to use this tag.
+                if (alliance != null && detection.id == alliance.getGoalAprilTagId()) {
                     return detection;
-                } else {
-                    // This tag is in the library, but we do not want to track it right now.
-                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                }
+                if (alliance == null && GOAL_TAGS.contains(detection.id)) {
+                    return detection;
+                }
+                // This tag is in the library, but we do not want to track it right now.
+                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
+                    telemetry.addData("GoalTag", "Tag ID %d is not desired", detection.id);
                 }
             } else {
                 // This tag is NOT in the library, so we don't have enough information to track to it.
-                telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
+                    telemetry.addData("GoalTag", "Tag ID %d is not in TagLibrary", detection.id);
+                }
             }
         }
         return null;
@@ -432,23 +441,25 @@ public class DecodeTeleop extends OpMode {
     private void telemetryAprilTag(List<AprilTagDetection> currentDetections) {
         telemetry.addData("# AprilTags Detected", currentDetections.size());
 
-        // Step through the list of detections and display info for each one.
-        for (AprilTagDetection detection : currentDetections) {
-            if (detection.metadata != null) {
-                telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
-                telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-                telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-                telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-            } else {
-                telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
-                telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-            }
-        }   // end for() loop
+        if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
+            // Step through the list of detections and display info for each one.
+            for (AprilTagDetection detection : currentDetections) {
+                if (detection.metadata != null) {
+                    telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
+                    telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
+                    telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
+                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                } else {
+                    telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
+                    telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
+                }
+            }   // end for() loop
 
-        // Add "key" information to telemetry
-        telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
-        telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
-        telemetry.addLine("RBE = Range, Bearing & Elevation");
+            // Add "key" information to telemetry
+            telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
+            telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
+            telemetry.addLine("RBE = Range, Bearing & Elevation");
+        }
 
     }   // end method telemetryAprilTag()
 

@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.RaceAction;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -86,16 +87,22 @@ public class GoalSideAuto extends DecodeAuto {
     @Override
     public void runAuto() {
         Actions.runBlocking(
+            new RaceAction(
+                // This action will run forever, so the RaceAction will terminate when
+                // the below sequence terminates.  Loop updates go first, so that our
+                // action sequence below operates on the most up-to-date data available.
+                shooter.updateForeverAction(),
                 new SequentialAction(
-                        shooter.setRpmAction(SHOOTER_RPM_TARGET),
-                        start.build(),
-                        shootingActionSequence(),
-                        pickUpFirstRow.build(),
-                        shootingActionSequence(),
-                        pickUpSecondRow.build(),
-                        shootingActionSequence(),
-                        parkOutsideLaunchZone.build()
+                    shooter.setRpmAction(SHOOTER_RPM_TARGET),
+                    start.build(),
+                    shootingActionSequence(),
+                    pickUpFirstRow.build(),
+                    shootingActionSequence(),
+                    pickUpSecondRow.build(),
+                    shootingActionSequence(),
+                    parkOutsideLaunchZone.build()
                 )
+            )
         );
     }
 }
