@@ -93,8 +93,8 @@ public class DecodeTeleop extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
 
-    public static double DRIVE_SPEED = 0.7;
-    public static double TURN_SPEED = 0.5;
+    public static double DRIVE_SPEED = 1.0;
+    public static double TURN_SPEED = 0.6;
 
     /**
      * The variable to store our instance of the AprilTag processor.
@@ -248,11 +248,13 @@ public class DecodeTeleop extends OpMode {
 
         if (gamepad2.cross) {
             feederSubsystem.start();
+        } else if (gamepad2.triangle) {
+            feederSubsystem.latched_start();
         } else {
             feederSubsystem.stop();
         }
 
-        if (!gamepad2.cross) {
+        if (!gamepad2.cross && !gamepad2.triangle) {
             if (gamepad1.left_trigger > 0.5) {
                 intakeSubsystem.start();
             } else if (gamepad1.square) {
@@ -262,14 +264,14 @@ public class DecodeTeleop extends OpMode {
             }
         }
 
-        telemetry.addLine("Press triangle to reset Yaw");
+        telemetry.addLine("Press \"share\" to reset Yaw");
 
         // If you press the A button, then you reset the Yaw to be zero from the way
         // the robot is currently pointing
-        if (gamepad1.triangle) {
+        if (gamepad1.share) {
             //imu.resetYaw();
             Pose2d currentPose = drive.localizer.getPose();
-            drive.localizer.setPose(new Pose2d(0, 0, 0.0));
+            drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0.0));
         }
 
         driveFieldRelative(driveSpeed, strafe, turn);

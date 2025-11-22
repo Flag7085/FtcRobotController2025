@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
@@ -78,6 +79,8 @@ public class ShooterSubsystem {
                      rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
              p.put("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
              p.put("Flywheel Target RPM", targetRPM);
+             p.put("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS));
+             p.put("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS));
          } else {
              telemetry.addData("Flywheel Speed (Raw RPM)", currentRpm);
              telemetry.addData("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
@@ -86,6 +89,9 @@ public class ShooterSubsystem {
                      rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
              telemetry.addData("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
              telemetry.addData("Flywheel Target RPM", targetRPM);
+             telemetry.addData("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS));
+             telemetry.addData("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS));
+
          }
      }
 

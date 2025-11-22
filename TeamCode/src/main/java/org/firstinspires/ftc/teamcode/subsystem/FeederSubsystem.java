@@ -37,6 +37,8 @@ public class FeederSubsystem {
     DcMotorEx feederWheel;
     Telemetry telemetry;
 
+    boolean triggerLatch = false;
+
     IntakeSubsystem intakeSubsystem;
     ShooterSubsystem shooterSubsystem;
 
@@ -65,8 +67,8 @@ public class FeederSubsystem {
         this.intakeSubsystem = intakeSubsystem;
     }
 
-    public void start() {
-        if (shooterSubsystem.atTargetRpm()) {
+    public void startImplementation(boolean shouldFeed) {
+        if (shouldFeed) {
             feederWheel.setPower(FEEDER_SPEED);
             if (intakeSubsystem != null) {
                 intakeSubsystem.start();
@@ -79,8 +81,18 @@ public class FeederSubsystem {
         }
     }
 
+    public void start() {
+            startImplementation(shooterSubsystem.atTargetRpm());
+    }
+
+    public void latched_start() {
+        triggerLatch |= shooterSubsystem.atTargetRpm();
+        startImplementation(triggerLatch);
+    }
+
     public void stop() {
         feederWheel.setPower(0);
+        triggerLatch = false;
     }
 
     public Action shootOne() {
