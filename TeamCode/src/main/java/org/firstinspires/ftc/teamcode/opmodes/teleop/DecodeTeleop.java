@@ -36,6 +36,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -103,6 +104,7 @@ public class DecodeTeleop extends OpMode {
     FeederSubsystem feederSubsystem;
     IntakeSubsystem intakeSubsystem;
     VisionSubsystem visionSubsystem;
+    PIDController autoTurnContoller;
 
     Alliance alliance = null;
 
@@ -121,6 +123,9 @@ public class DecodeTeleop extends OpMode {
 
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
         UPDATE_FLYWHEEL_PID = true;
+
+        autoTurnContoller = new PIDController(Tuning.AIM_P, 0, Tuning.AIM_D);
+
         pidTuner();
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
@@ -165,18 +170,18 @@ public class DecodeTeleop extends OpMode {
         driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
         strafe = gamepad1.left_stick_x  * driveMultiplier;
 
-        if (gamepad1.circle && goalTag != null) {
+        if (gamepad1.circle && goalTag != null){
             double headingError = -goalTag.ftcPose.bearing;
+            turn = autoTurnContoller.calculate(headingError, 0);
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
                 telemetry.addData("AutoAim", "Auto: Robot aligned with AprilTag!");
-            } else {
-                turn = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
             }
             telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             turn   = gamepad1.right_stick_x * TURN_SPEED;
             telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            autoTurnContoller.calculate(0, 0);
         }
 
         // Basic shooting logic
@@ -216,6 +221,8 @@ public class DecodeTeleop extends OpMode {
                     Tuning.FLYWHEEL_I,
                     Tuning.FLYWHEEL_D
             );
+
+            autoTurnContoller.setPID(Tuning.AIM_P, 0, Tuning.AIM_D);
 
             UPDATE_FLYWHEEL_PID = false;
         }
