@@ -46,15 +46,26 @@ public class VisionSubsystem {
 
     private Telemetry telemetry;
 
-    public VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
+    public VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry, boolean initProcessor) {
         this.indicatorLight = new GobildaIndicatorLight(hardwareMap, "ledIndicator");
         this.telemetry = telemetry;
-        initAprilTag(hardwareMap);
+        if (initProcessor) {
+            initAprilTag(hardwareMap);
+        }
     }
+
+    public VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
+        this(hardwareMap, telemetry, true);
+    }
+
 
     public void setGoalTagIds(Integer... tagIds) {
         goalTagIds.clear();
         goalTagIds.addAll(Arrays.asList(tagIds));
+    }
+
+    public boolean isGoalTagId(int tagId) {
+        return goalTagIds.contains(tagId);
     }
 
     public void turnOnFtcDashboardStream(double maxFps) {
