@@ -39,10 +39,7 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.Tuning;
@@ -52,12 +49,6 @@ import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.VisionSubsystem;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.List;
-import java.util.Set;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -79,7 +70,8 @@ import java.util.Set;
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class DecodeTeleop extends OpMode {
 
-    public static boolean UPDATE_FLYWHEEL_PID = true;
+    public static boolean UPDATE_CONTROLLER_COEFFICIENTS = true;
+    public static boolean LOG_DRIVE_MOTOR_POWERS = true;
 
     public static double SHOOTER_SPEED_RPM = 3000;
 
@@ -104,33 +96,32 @@ public class DecodeTeleop extends OpMode {
     FeederSubsystem feederSubsystem;
     IntakeSubsystem intakeSubsystem;
     VisionSubsystem visionSubsystem;
-    PIDController autoTurnContoller;
+    PIDController autoTurnController;
 
     Alliance alliance = null;
+
+    // For tracking loop time
+    long previousTime = 0;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        alliance = (Alliance) blackboard.get(Constants.ALLIANCE);
 
         Pose2d startingPose = new Pose2d(0,0,0);
         if ((boolean)blackboard.getOrDefault(Constants.USE_POSE_FROM_AUTO, false)) {
-            alliance = (Alliance) blackboard.get(Constants.ALLIANCE);
-            blackboard.put(Constants.ALLIANCE, null);
-
             startingPose = (Pose2d)blackboard.get(Constants.POSE_FROM_AUTO);
             blackboard.put(Constants.USE_POSE_FROM_AUTO, false);
         }
 
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
-        UPDATE_FLYWHEEL_PID = true;
-
-        autoTurnContoller = new PIDController(Tuning.AIM_P, 0, Tuning.AIM_D);
-
+        autoTurnController = new PIDController(Tuning.AIM_P, 0, Tuning.AIM_D);
+        UPDATE_CONTROLLER_COEFFICIENTS = true;
         pidTuner();
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
         feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
-        visionSubsystem = new VisionSubsystem(hardwareMap, telemetry);
+        visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
         visionSubsystem.turnOnFtcDashboardStream(10);
 
         if (alliance != null) {
@@ -147,6 +138,7 @@ public class DecodeTeleop extends OpMode {
 
     @Override
     public void loop() {
+        logLoopTime();
         pidTuner();
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
@@ -162,7 +154,7 @@ public class DecodeTeleop extends OpMode {
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
         // This also turns on an indicator light if it finds one...
-        AprilTagDetection goalTag = visionSubsystem.findGoalTag();
+        VisionSubsystem.GoalTag goalTag = visionSubsystem.findGoalTag();
 
         double driveSpeed, strafe, turn;
 
@@ -171,23 +163,26 @@ public class DecodeTeleop extends OpMode {
         strafe = gamepad1.left_stick_x  * driveMultiplier;
 
         if (gamepad1.circle && goalTag != null){
-            double headingError = -goalTag.ftcPose.bearing;
-            turn = autoTurnContoller.calculate(headingError, 0);
+            double headingError = -goalTag.getHeadingOffsetDegrees();
+            turn = autoTurnController.calculate(headingError, 0);
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
-                telemetry.addData("AutoAim", "Auto: Robot aligned with AprilTag!");
+                telemetry.addData("AutoAimAligned", "Auto: Robot aligned with AprilTag!");
+            } else {
+                telemetry.addData("AutoAimAligned", "Auto: Robot not aligned with AprilTag!");
             }
             telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             turn   = gamepad1.right_stick_x * TURN_SPEED;
+            telemetry.addData("AutoAimAligned", "Manual: not checked");
             telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
-            autoTurnContoller.calculate(0, 0);
+            autoTurnController.calculate(0, 0);
         }
 
         // Basic shooting logic
         double targetRPMs = SHOOTER_SPEED_RPM;
         if (goalTag != null) {
-            targetRPMs = shooterSubsystem.calculateRPMs(goalTag.ftcPose.range);
+            targetRPMs = shooterSubsystem.calculateRPMs(goalTag.getRangeInches());
         }
         shooterSubsystem.setRPM(targetRPMs);
         shooterSubsystem.loop();  // This updates PID/power, ALWAYS need to call shooterSubsystem.loop()
@@ -212,8 +207,16 @@ public class DecodeTeleop extends OpMode {
         driveFieldRelative(driveSpeed, strafe, turn);
     }
 
+    private void logLoopTime() {
+        long currentTime = System.currentTimeMillis();
+        if (previousTime > 0) {
+            telemetry.addData("Latency (ms)", currentTime - previousTime);
+        }
+        previousTime = currentTime;
+    }
+
     private void pidTuner() {
-        if (UPDATE_FLYWHEEL_PID) {
+        if (UPDATE_CONTROLLER_COEFFICIENTS) {
             shooterSubsystem.setCoefficients(
                     Tuning.FLYWHEEL_S,
                     Tuning.FLYWHEEL_V,
@@ -222,15 +225,15 @@ public class DecodeTeleop extends OpMode {
                     Tuning.FLYWHEEL_D
             );
 
-            autoTurnContoller.setPID(Tuning.AIM_P, 0, Tuning.AIM_D);
+            autoTurnController.setPID(Tuning.AIM_P, 0, Tuning.AIM_D);
 
-            UPDATE_FLYWHEEL_PID = false;
+            UPDATE_CONTROLLER_COEFFICIENTS = false;
         }
-        telemetry.addData("Flywheel S", Tuning.FLYWHEEL_S);
-        telemetry.addData("Flywheel V", Tuning.FLYWHEEL_V);
-        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
-        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
-        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
+//        telemetry.addData("Flywheel S", Tuning.FLYWHEEL_S);
+//        telemetry.addData("Flywheel V", Tuning.FLYWHEEL_V);
+//        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
+//        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
+//        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
@@ -268,8 +271,6 @@ public class DecodeTeleop extends OpMode {
         // Second, rotate angle by the angle the robot is pointing
         theta = AngleUnit.normalizeRadians(
                 theta - drive.localizer.getPose().heading.toDouble() - headingOffset);
-//        theta = AngleUnit.normalizeRadians(theta -
-//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
@@ -292,6 +293,11 @@ public class DecodeTeleop extends OpMode {
         // Replace manual drive(...) call with Roadrunner control
         // Use setWeightedDrivePower and update for holo drive and localization
         drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, -right), -rotate));
+
+        // Log out some telemetry to sanity check
+        if (LOG_DRIVE_MOTOR_POWERS) {
+            drive.logDrivePowers(telemetry);
+        }
     }
 
 }

@@ -1,24 +1,15 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class VisionSubsystem {
-    // Adjust Image Decimation to trade-off detection-range for detection-rate.
-    public static int DECIMATION = 3;
+public abstract class VisionSubsystem {
     public static boolean ENABLE_DETAILED_APRIL_TAG_TELEMETRY = false;
     // If we don't have a specific Alliance, then we will use this set
     // to match either alliance goal for targeting.
@@ -28,173 +19,70 @@ public class VisionSubsystem {
     );
 
     /**
-     * The variable to store our instance of the AprilTag processor.
+     * This implementation uses a basic webcam paired with VisionPortal.  This assumes that the
+     * webcam device is configured with the hardware name "Webcam 1"
      */
-    private AprilTagProcessor aprilTag;
+    public static VisionSubsystem createUsingVisionPortal(HardwareMap hardwareMap, Telemetry telemetry) {
+        return new VisionPortalVisionSubsystem(hardwareMap, telemetry);
+    }
 
     /**
-     * The variable to store our instance of the vision portal.
+     * This implementation uses a Limelight3A for vision tasks.  This assumes that the limelight
+     * is configured with the hardware name "limelight"
      */
-    private VisionPortal visionPortal;
+    public static VisionSubsystem createUsingLimelight(HardwareMap hardwareMap, Telemetry telemetry) {
+        return new LimelightVisionSubsystem(hardwareMap, telemetry);
+    }
 
-    public Set<Integer> goalTagIds = new HashSet<>(GOAL_TAGS);
+    public interface GoalTag {
+        /**
+         * This returns the heading of the april tag relative to the camera/robot.
+         */
+        double getHeadingOffsetDegrees();
+
+        /**
+         * Distance along the horizontal plane from the camera lens to the center of the tag
+         * NOTE: We started without any camera pose information, so to keep things consistent
+         *       moving forward we will continue to naively assume a camera pitch of 0
+         */
+        double getRangeInches();
+    }
+
+
+    Set<Integer> goalTagIds = new HashSet<>(GOAL_TAGS);
 
     /**
      * LED to indicate when a tag is being tracked
      */
-    private GobildaIndicatorLight indicatorLight;
+    protected GobildaIndicatorLight indicatorLight;
 
-    private Telemetry telemetry;
+    protected Telemetry telemetry;
 
-    public VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry, boolean initProcessor) {
+    protected VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
         this.indicatorLight = new GobildaIndicatorLight(hardwareMap, "ledIndicator");
         this.telemetry = telemetry;
-        if (initProcessor) {
-            initAprilTag(hardwareMap);
-        }
     }
 
-    public VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
-        this(hardwareMap, telemetry, true);
-    }
+    public abstract void turnOnFtcDashboardStream(double maxFps);
 
+    protected abstract GoalTag findGoalTagImpl();
 
     public void setGoalTagIds(Integer... tagIds) {
         goalTagIds.clear();
         goalTagIds.addAll(Arrays.asList(tagIds));
     }
 
-    public boolean isGoalTagId(int tagId) {
-        return goalTagIds.contains(tagId);
+    public GoalTag findGoalTag() {
+        GoalTag tag = findGoalTagImpl();
+        setTrackingIndicatorLight(tag != null);
+        return tag;
     }
 
-    public void turnOnFtcDashboardStream(double maxFps) {
-        FtcDashboard.getInstance().startCameraStream(visionPortal, maxFps);
-    }
-
-    public AprilTagDetection findGoalTag() {
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        AprilTagDetection goalTag = getGoalTag(currentDetections);
-        if (goalTag != null) {
-            telemetry.addData("Goal Tag Found", "ID %d (%s)", goalTag.id, goalTag.metadata.name);
-            telemetry.addData("Range",  "%5.1f inches", goalTag.ftcPose.range);
-            telemetry.addData("Bearing","%3.0f degrees", goalTag.ftcPose.bearing);
-            telemetry.addData("Yaw","%3.0f degrees", goalTag.ftcPose.yaw);
-
+    private void setTrackingIndicatorLight(boolean isTrackingGoalTag) {
+        if (isTrackingGoalTag) {
             indicatorLight.setColor(GobildaIndicatorLight.Color.YELLOW_GREEN);
         } else {
             indicatorLight.setColor(GobildaIndicatorLight.Color.OFF);
         }
-        telemetryAprilTag(currentDetections);
-        return goalTag;
     }
-
-    private AprilTagDetection getGoalTag(List<AprilTagDetection> detections) {
-        for (AprilTagDetection detection : detections) {
-            // Look to see if we have size info on this tag.
-            if (detection.metadata != null) {
-                if (goalTagIds.contains(detection.id)) {
-                    return detection;
-                }
-                // This tag is in the library, but we do not want to track it right now.
-                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-                    telemetry.addData("GoalTag", "Tag ID %d is not desired", detection.id);
-                }
-            } else {
-                // This tag is NOT in the library, so we don't have enough information to track to it.
-                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-                    telemetry.addData("GoalTag", "Tag ID %d is not in TagLibrary", detection.id);
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Initialize the AprilTag processor.
-     */
-    public void initAprilTag(HardwareMap hardwareMap) {
-
-        // Create the AprilTag processor.
-        aprilTag = new AprilTagProcessor.Builder()
-
-                // The following default settings are available to un-comment and edit as needed.
-                //.setDrawAxes(false)
-                //.setDrawCubeProjection(false)
-                //.setDrawTagOutline(true)
-                //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
-                //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
-                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-
-                // == CAMERA CALIBRATION ==
-                // If you do not manually specify calibration parameters, the SDK will attempt
-                // to load a predefined calibration for your camera.
-                //.setLensIntrinsics(578.272, 578.272, 402.145, 221.506)
-                // ... these parameters are fx, fy, cx, cy.
-
-                .build();
-
-        // Adjust Image Decimation to trade-off detection-range for detection-rate.
-        // eg: Some typical detection data using a Logitech C920 WebCam
-        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
-        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
-        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second (default)
-        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second (default)
-        // Note: Decimation can be changed on-the-fly to adapt during a match.
-        aprilTag.setDecimation(DECIMATION);
-
-        // Create the vision portal by using a builder.
-        VisionPortal.Builder builder = new VisionPortal.Builder();
-
-        // Set the camera
-        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
-
-        // Choose a camera resolution. Not all cameras support all resolutions.
-        //builder.setCameraResolution(new Size(640, 480));
-
-        // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
-        builder.enableLiveView(true);
-
-        // Set the stream format; MJPEG uses less bandwidth than default YUY2.
-        //builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
-
-        // Choose whether or not LiveView stops if no processors are enabled.
-        // If set "true", monitor shows solid orange screen if no processors enabled.
-        // If set "false", monitor shows camera view without annotations.
-        //builder.setAutoStopLiveView(false);
-
-        // Set and enable the processor and build the vision portal
-        builder.addProcessor(aprilTag);
-        visionPortal = builder.build();
-
-        // Disable or re-enable the aprilTag processor at any time.
-        //visionPortal.setProcessorEnabled(aprilTag, true);
-
-    }   // end method initAprilTag()
-
-    private void telemetryAprilTag(List<AprilTagDetection> currentDetections) {
-        telemetry.addData("# AprilTags Detected", currentDetections.size());
-
-        if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-            // Step through the list of detections and display info for each one.
-            for (AprilTagDetection detection : currentDetections) {
-                if (detection.metadata != null) {
-                    telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
-                    telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-                    telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-                } else {
-                    telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
-                    telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-                }
-            }   // end for() loop
-
-            // Add "key" information to telemetry
-            telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
-            telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
-            telemetry.addLine("RBE = Range, Bearing & Elevation");
-        }
-
-    }   // end method telemetryAprilTag()
-
 }
