@@ -21,6 +21,11 @@ public class ShooterSubsystem {
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
     public static double TARGET_TOLERANCE = 40;
 
+    public static double CLOSE_RANGE = 32.9;
+    public static double CLOSE_RPM = 2525;
+    public static double FAR_RANGE = 69.1;
+    public static double FAR_RPM = 3275;
+
     PIDController pid;
     SimpleMotorFeedforward feedforward;
 
@@ -139,16 +144,17 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
+         telemetry.addData("Shooter Range", rangeInInches);
          rangeInInches += 0;
 
          if (rangeInInches > 90) {
              return 4010;
          }
 
-         double rangeClose = 32.9;
-         double rangeFar = 69.1;
-         double rpmClose = 2525;
-         double rpmFar = 3275;
+         double rangeClose = CLOSE_RANGE;
+         double rangeFar = FAR_RANGE;
+         double rpmClose = CLOSE_RPM;
+         double rpmFar = FAR_RPM;
 
          // y = mx + b
          // b = y - mx
