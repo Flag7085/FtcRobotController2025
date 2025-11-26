@@ -29,6 +29,11 @@ public class LimelightVisionSubsystem extends VisionSubsystem {
     }
 
     @Override
+    public void start() {
+        limelight.start();
+    }
+
+    @Override
     public void turnOnFtcDashboardStream(double maxFps) {
         FtcDashboard.getInstance().startCameraStream(limelight, 10);
     }
@@ -56,9 +61,12 @@ public class LimelightVisionSubsystem extends VisionSubsystem {
     }
 
     private LLResultTypes.FiducialResult searchForGoalId(LLResult result) {
+        telemetry.addData("Results", result);
+        telemetry.addData("Goal IDs", goalTagIds);
         if (result != null && result.isValid()) {
             List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
             for (LLResultTypes.FiducialResult fiducial : fiducials){
+                telemetry.addLine(String.format("Fiducial: %s", fiducial));
                 if (goalTagIds.contains(fiducial.getFiducialId())) {
                     return fiducial;
                 }

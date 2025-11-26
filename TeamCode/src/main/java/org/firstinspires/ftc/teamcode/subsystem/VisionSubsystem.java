@@ -63,6 +63,8 @@ public abstract class VisionSubsystem {
         this.telemetry = telemetry;
     }
 
+    public void start() {}
+
     public abstract void turnOnFtcDashboardStream(double maxFps);
 
     protected abstract GoalTag findGoalTagImpl();

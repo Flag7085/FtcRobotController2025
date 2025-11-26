@@ -137,6 +137,11 @@ public class DecodeTeleop extends OpMode {
     }
 
     @Override
+    public void start() {
+        visionSubsystem.start();
+    }
+
+    @Override
     public void loop() {
         logLoopTime();
         pidTuner();
