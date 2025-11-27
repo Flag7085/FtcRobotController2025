@@ -5,7 +5,6 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseMap;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.Tuning;
@@ -16,8 +15,6 @@ import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
 
 public abstract class DecodeAuto extends LinearOpMode {
-
-
 
     private final Alliance alliance;
     protected final Pose2d beginPose;
@@ -49,12 +46,13 @@ public abstract class DecodeAuto extends LinearOpMode {
 
         intake = new IntakeSubsystem(hardwareMap, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
-        shooter.setPIDF(new PIDFCoefficients(
+        shooter.setCoefficients(
+                Tuning.FLYWHEEL_S,
+                Tuning.FLYWHEEL_V,
                 Tuning.FLYWHEEL_P,
                 Tuning.FLYWHEEL_I,
-                Tuning.FLYWHEEL_D,
-                Tuning.FLYWHEEL_F
-        ));
+                Tuning.FLYWHEEL_D
+        );
         feeder = new FeederSubsystem(hardwareMap, telemetry, shooter);
         initialize();
     }

@@ -53,11 +53,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class TuningOpModes {
-    // TODO: change this to TankDrive.class if you're using tank
     public static final Class<?> DRIVE_CLASS = MecanumDrive.class;
 
     public static final String GROUP = "quickstart";
-    public static final boolean DISABLED = false;
+
+    // TODO - Change this to enable/disable tuning opmodes
+    public static final boolean DISABLED = true;
 
     private TuningOpModes() {}
 
@@ -128,7 +129,7 @@ public final class TuningOpModes {
         };
     }
 
-    //@OpModeRegistrar
+    @OpModeRegistrar
     public static void register(OpModeManager manager) {
         if (DISABLED) return;
 

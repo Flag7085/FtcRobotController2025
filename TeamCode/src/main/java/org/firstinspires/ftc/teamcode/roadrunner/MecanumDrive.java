@@ -51,6 +51,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.roadrunner.localization.Localizer;
@@ -281,6 +282,13 @@ public final class MecanumDrive {
         leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
         rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
+    }
+
+    public void logDrivePowers(Telemetry telemetry) {
+        telemetry.addData("Drive Power (LF)", leftFront.getPower());
+        telemetry.addData("Drive Power (LB)", leftBack.getPower());
+        telemetry.addData("Drive Power (RB)", rightBack.getPower());
+        telemetry.addData("Drive Power (RF)", rightFront.getPower());
     }
 
     public final class FollowTrajectoryAction implements Action {

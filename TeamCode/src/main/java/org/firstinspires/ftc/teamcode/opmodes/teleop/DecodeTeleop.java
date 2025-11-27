@@ -36,13 +36,10 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.Tuning;
@@ -51,12 +48,7 @@ import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.List;
-import java.util.Set;
+import org.firstinspires.ftc.teamcode.subsystem.VisionSubsystem;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -78,9 +70,8 @@ import java.util.Set;
 @TeleOp(name = "Decode Teleop", group = "Robot")
 public class DecodeTeleop extends OpMode {
 
-    public static boolean UPDATE_FLYWHEEL_PID = true;
-
-    public static boolean ENABLE_DETAILED_APRIL_TAG_TELEMETRY = false;
+    public static boolean UPDATE_CONTROLLER_COEFFICIENTS = true;
+    public static boolean LOG_DRIVE_MOTOR_POWERS = true;
 
     public static double SHOOTER_SPEED_RPM = 3000;
 
@@ -93,31 +84,8 @@ public class DecodeTeleop extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
 
-    public static double DRIVE_SPEED = 0.7;
-    public static double TURN_SPEED = 0.5;
-
-    /**
-     * The variable to store our instance of the AprilTag processor.
-     */
-    private AprilTagProcessor aprilTag;
-
-    // If we don't have a specific Alliance, then we will use this set
-    // to match either alliance goal for targeting.
-    private static final Set<Integer> GOAL_TAGS = Set.of(
-            Alliance.BLUE.getGoalAprilTagId(),
-            Alliance.RED.getGoalAprilTagId()
-    );
-
-    // Adjust Image Decimation to trade-off detection-range for detection-rate.
-    public static int  DECIMATION = 3;
-
-    // LED indicatorLight
-    Servo indicatorLight;
-
-    /**
-     * The variable to store our instance of the vision portal.
-     */
-    private VisionPortal visionPortal;
+    public static double DRIVE_SPEED = 1.0;
+    public static double TURN_SPEED = 0.6;
 
     // No IMU - We use Pinpoint, which is integrated with the MecanumDrive class.
     // This declares the IMU needed to get the current direction the robot is facing
@@ -127,132 +95,111 @@ public class DecodeTeleop extends OpMode {
     ShooterSubsystem shooterSubsystem;
     FeederSubsystem feederSubsystem;
     IntakeSubsystem intakeSubsystem;
+    VisionSubsystem visionSubsystem;
+    PIDController autoTurnController;
 
     Alliance alliance = null;
+
+    // For tracking loop time
+    long previousTime = 0;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-
-        shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
-        PIDFCoefficients c = shooterSubsystem.getPIDF();
-
-//        if (!UPDATE_FLYWHEEL_PID) {
-//            Tuning.FLYWHEEL_P = c.p;
-//            Tuning.FLYWHEEL_I = c.i;
-//            Tuning.FLYWHEEL_D = c.d;
-//            Tuning.FLYWHEEL_F = c.f;
-//        }
-        UPDATE_FLYWHEEL_PID = true;
-        pidTuner();
-
-        intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
-        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
-
-        indicatorLight = hardwareMap.get(Servo.class, "ledIndicator");
-
-        telemetry.addLine("Who Can Do It??");
-        telemetry.addLine("We Can Do It!!!");
-
-
-        // Initialize the Apriltag Detection process
-        initAprilTag();
-        FtcDashboard.getInstance().startCameraStream(visionPortal, 10);
-
-        // Wait for the DS start button to be touched.
-        telemetry.addData("DS preview on/off", "3 dots, Camera Stream");
-        telemetry.addData(">", "Touch START to start OpMode");
+        alliance = (Alliance) blackboard.get(Constants.ALLIANCE);
 
         Pose2d startingPose = new Pose2d(0,0,0);
         if ((boolean)blackboard.getOrDefault(Constants.USE_POSE_FROM_AUTO, false)) {
-            alliance = (Alliance) blackboard.get(Constants.ALLIANCE);
-            blackboard.put(Constants.ALLIANCE, null);
-
             startingPose = (Pose2d)blackboard.get(Constants.POSE_FROM_AUTO);
             blackboard.put(Constants.USE_POSE_FROM_AUTO, false);
         }
 
+        shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry);
+        autoTurnController = new PIDController(Tuning.AIM_P, 0, Tuning.AIM_D);
+        UPDATE_CONTROLLER_COEFFICIENTS = true;
+        pidTuner();
+
+        intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
+        feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
+        visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
+        visionSubsystem.turnOnFtcDashboardStream(10);
+
+        if (alliance != null) {
+            visionSubsystem.setGoalTagIds(alliance.getGoalAprilTagId());
+        }
+
         drive = new MecanumDrive(hardwareMap, startingPose);
-        // imu = drive.lazyImu.get();
+
+        // Wait for the DS start button to be touched.
+        telemetry.addLine("Who Can Do It??");
+        telemetry.addLine("We Can Do It!!!");
+        telemetry.addData(">", "Touch START to start OpMode");
+    }
+
+    @Override
+    public void start() {
+        visionSubsystem.start();
     }
 
     @Override
     public void loop() {
+        logLoopTime();
         pidTuner();
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
+        telemetry.addLine("Press \"share\" to reset Yaw");
+
+        // If you press the A button, then you reset the Yaw to be zero from the way
+        // the robot is currently pointing
+        if (gamepad1.share) {
+            //imu.resetYaw();
+            Pose2d currentPose = drive.localizer.getPose();
+            drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0.0));
+        }
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
-//        telemetry.addData("IMU Angle",
-//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-//        telemetry.addData("IMU Velocity",
-//                imu.getRobotAngularVelocity(AngleUnit.DEGREES));
-
-        // TODO - set and read angular velocity
-
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        telemetryAprilTag(currentDetections);
-        AprilTagDetection goalTag = getGoalTag(currentDetections);
-
-        // Tell the driver what we see, and what to do.
-        if (goalTag != null) {
-            telemetry.addData("Found", "ID %d (%s)", goalTag.id, goalTag.metadata.name);
-            telemetry.addData("Range",  "%5.1f inches", goalTag.ftcPose.range);
-            telemetry.addData("Bearing","%3.0f degrees", goalTag.ftcPose.bearing);
-            telemetry.addData("Yaw","%3.0f degrees", goalTag.ftcPose.yaw);
-        } else {
-            telemetry.addData("\n>","Drive using joysticks to find valid target\n");
-        }
-
-        if (goalTag != null) {
-            indicatorLight.setPosition(0.4);
-        } else {
-            indicatorLight.setPosition(0.0);
-        }
+        // This also turns on an indicator light if it finds one...
+        VisionSubsystem.GoalTag goalTag = visionSubsystem.findGoalTag();
 
         double driveSpeed, strafe, turn;
 
         double driveMultiplier = gamepad1.left_stick_button ? 1.0 : DRIVE_SPEED;
+        driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
+        strafe = gamepad1.left_stick_x  * driveMultiplier;
 
-        if (gamepad1.circle && goalTag != null) {
-            double headingError = -goalTag.ftcPose.bearing;
-
-            driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
-            strafe = gamepad1.left_stick_x  * driveMultiplier;
+        if (gamepad1.circle && goalTag != null){
+            double headingError = -goalTag.getHeadingOffsetDegrees();
+            turn = autoTurnController.calculate(headingError, 0);
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
-                telemetry.addData("AutoAim", "Auto: Robot aligned with AprilTag!");
+                telemetry.addData("AutoAimAligned", "Auto: Robot aligned with AprilTag!");
             } else {
-                turn = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN);
+                telemetry.addData("AutoAimAligned", "Auto: Robot not aligned with AprilTag!");
             }
             telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
-            // Manual control section
-            driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
-            strafe = gamepad1.left_stick_x  * driveMultiplier;
             turn   = gamepad1.right_stick_x * TURN_SPEED;
+            telemetry.addData("AutoAimAligned", "Manual: not checked");
             telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            autoTurnController.calculate(0, 0);
         }
 
         // Basic shooting logic
         double targetRPMs = SHOOTER_SPEED_RPM;
         if (goalTag != null) {
-            targetRPMs = shooterSubsystem.calculateRPMs(goalTag.ftcPose.range);
+            targetRPMs = shooterSubsystem.calculateRPMs(goalTag.getRangeInches());
         }
-        //if (gamepad2.right_trigger > 0.5) {
         shooterSubsystem.setRPM(targetRPMs);
-        //} else {
-        //    shooterSubsystem.setRPM(0);
-        //}
-        shooterSubsystem.loop();
+        shooterSubsystem.loop();  // This updates PID/power, ALWAYS need to call shooterSubsystem.loop()
 
         if (gamepad2.cross) {
             feederSubsystem.start();
+        } else if (gamepad2.triangle) {
+            feederSubsystem.latched_start();
         } else {
             feederSubsystem.stop();
-        }
-
-        if (!gamepad2.cross) {
+            // Feeder control from the manipulator overrides intake behavior
+            // If those buttons are not pressed, then the driver gets control
             if (gamepad1.left_trigger > 0.5) {
                 intakeSubsystem.start();
             } else if (gamepad1.square) {
@@ -262,33 +209,36 @@ public class DecodeTeleop extends OpMode {
             }
         }
 
-        telemetry.addLine("Press triangle to reset Yaw");
-
-        // If you press the A button, then you reset the Yaw to be zero from the way
-        // the robot is currently pointing
-        if (gamepad1.triangle) {
-            //imu.resetYaw();
-            Pose2d currentPose = drive.localizer.getPose();
-            drive.localizer.setPose(new Pose2d(0, 0, 0.0));
-        }
-
         driveFieldRelative(driveSpeed, strafe, turn);
     }
 
+    private void logLoopTime() {
+        long currentTime = System.currentTimeMillis();
+        if (previousTime > 0) {
+            telemetry.addData("Latency (ms)", currentTime - previousTime);
+        }
+        previousTime = currentTime;
+    }
+
     private void pidTuner() {
-        if (UPDATE_FLYWHEEL_PID) {
-            PIDFCoefficients c = new PIDFCoefficients(
+        if (UPDATE_CONTROLLER_COEFFICIENTS) {
+            shooterSubsystem.setCoefficients(
+                    Tuning.FLYWHEEL_S,
+                    Tuning.FLYWHEEL_V,
                     Tuning.FLYWHEEL_P,
                     Tuning.FLYWHEEL_I,
-                    Tuning.FLYWHEEL_D,
-                    Tuning.FLYWHEEL_F);
-            shooterSubsystem.setPIDF(c);
-            UPDATE_FLYWHEEL_PID = false;
+                    Tuning.FLYWHEEL_D
+            );
+
+            autoTurnController.setPID(Tuning.AIM_P, 0, Tuning.AIM_D);
+
+            UPDATE_CONTROLLER_COEFFICIENTS = false;
         }
-        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
-        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
-        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
-        telemetry.addData("Flywheel F", Tuning.FLYWHEEL_F);
+//        telemetry.addData("Flywheel S", Tuning.FLYWHEEL_S);
+//        telemetry.addData("Flywheel V", Tuning.FLYWHEEL_V);
+//        telemetry.addData("Flywheel P", Tuning.FLYWHEEL_P);
+//        telemetry.addData("Flywheel I", Tuning.FLYWHEEL_I);
+//        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
     }
 
     private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
@@ -326,8 +276,6 @@ public class DecodeTeleop extends OpMode {
         // Second, rotate angle by the angle the robot is pointing
         theta = AngleUnit.normalizeRadians(
                 theta - drive.localizer.getPose().heading.toDouble() - headingOffset);
-//        theta = AngleUnit.normalizeRadians(theta -
-//                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
@@ -350,118 +298,11 @@ public class DecodeTeleop extends OpMode {
         // Replace manual drive(...) call with Roadrunner control
         // Use setWeightedDrivePower and update for holo drive and localization
         drive.setDrivePowers(new PoseVelocity2d(new Vector2d(forward, -right), -rotate));
-    }
 
-    /**
-     * Initialize the AprilTag processor.
-     */
-    private void initAprilTag() {
-
-        // Create the AprilTag processor.
-        aprilTag = new AprilTagProcessor.Builder()
-
-                // The following default settings are available to un-comment and edit as needed.
-                //.setDrawAxes(false)
-                //.setDrawCubeProjection(false)
-                //.setDrawTagOutline(true)
-                //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
-                //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
-                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-
-                // == CAMERA CALIBRATION ==
-                // If you do not manually specify calibration parameters, the SDK will attempt
-                // to load a predefined calibration for your camera.
-                //.setLensIntrinsics(578.272, 578.272, 402.145, 221.506)
-                // ... these parameters are fx, fy, cx, cy.
-
-                .build();
-
-        // Adjust Image Decimation to trade-off detection-range for detection-rate.
-        // eg: Some typical detection data using a Logitech C920 WebCam
-        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
-        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
-        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second (default)
-        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second (default)
-        // Note: Decimation can be changed on-the-fly to adapt during a match.
-        aprilTag.setDecimation(DECIMATION);
-
-        // Create the vision portal by using a builder.
-        VisionPortal.Builder builder = new VisionPortal.Builder();
-
-        // Set the camera
-        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
-
-        // Choose a camera resolution. Not all cameras support all resolutions.
-        //builder.setCameraResolution(new Size(640, 480));
-
-        // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
-        builder.enableLiveView(true);
-
-        // Set the stream format; MJPEG uses less bandwidth than default YUY2.
-        //builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
-
-        // Choose whether or not LiveView stops if no processors are enabled.
-        // If set "true", monitor shows solid orange screen if no processors enabled.
-        // If set "false", monitor shows camera view without annotations.
-        //builder.setAutoStopLiveView(false);
-
-        // Set and enable the processor and build the vision portal
-        builder.addProcessor(aprilTag);
-        visionPortal = builder.build();
-
-        // Disable or re-enable the aprilTag processor at any time.
-        //visionPortal.setProcessorEnabled(aprilTag, true);
-
-    }   // end method initAprilTag()
-
-    private AprilTagDetection getGoalTag(List<AprilTagDetection> detections) {
-        for (AprilTagDetection detection : detections) {
-            // Look to see if we have size info on this tag.
-            if (detection.metadata != null) {
-                if (alliance != null && detection.id == alliance.getGoalAprilTagId()) {
-                    return detection;
-                }
-                if (alliance == null && GOAL_TAGS.contains(detection.id)) {
-                    return detection;
-                }
-                // This tag is in the library, but we do not want to track it right now.
-                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-                    telemetry.addData("GoalTag", "Tag ID %d is not desired", detection.id);
-                }
-            } else {
-                // This tag is NOT in the library, so we don't have enough information to track to it.
-                if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-                    telemetry.addData("GoalTag", "Tag ID %d is not in TagLibrary", detection.id);
-                }
-            }
+        // Log out some telemetry to sanity check
+        if (LOG_DRIVE_MOTOR_POWERS) {
+            drive.logDrivePowers(telemetry);
         }
-        return null;
     }
-
-    private void telemetryAprilTag(List<AprilTagDetection> currentDetections) {
-        telemetry.addData("# AprilTags Detected", currentDetections.size());
-
-        if (ENABLE_DETAILED_APRIL_TAG_TELEMETRY) {
-            // Step through the list of detections and display info for each one.
-            for (AprilTagDetection detection : currentDetections) {
-                if (detection.metadata != null) {
-                    telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
-                    telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-                    telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-                } else {
-                    telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
-                    telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-                }
-            }   // end for() loop
-
-            // Add "key" information to telemetry
-            telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
-            telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
-            telemetry.addLine("RBE = Range, Bearing & Elevation");
-        }
-
-    }   // end method telemetryAprilTag()
-
 
 }
