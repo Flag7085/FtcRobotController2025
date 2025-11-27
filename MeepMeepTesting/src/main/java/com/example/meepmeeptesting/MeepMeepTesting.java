@@ -2,6 +2,7 @@ package com.example.meepmeeptesting;
 
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.Pose2dDual;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
@@ -118,8 +119,52 @@ public class MeepMeepTesting {
                 .waitSeconds(0.5)
                 .build();
     }
+    public static Action buildGoalSideAutoWithGate(RoadRunnerBotEntity bot) {
+        return bot
+                .getDrive()
+                //.actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
+                .actionBuilder(new Pose2d(-63, 41, Math.toRadians(180)))
+                // Line up and shoot
+                //.lineToXSplineHeading(-30, Math.toRadians(135))
+                .setReversed(true)
+                .splineTo(new Vector2d(-30, 30), Math.toRadians(-45))
+                .waitSeconds(1.0)
 
+
+
+                // Go pick up first line of Artifacts
+                .splineToLinearHeading(new Pose2d(-12, 24, Math.toRadians(90)), Math.toRadians(0))
+                .setReversed(false)
+                .lineToY(52, (pose2dDual, posePath, v) -> 10)
+               // .lineToX()
+                // Go to the gate
+                .splineToLinearHeading(new Pose2d(0, 59, Math.toRadians(180)), Math.toRadians(90))
+                // Line up and shoot
+                .waitSeconds(2.0)
+                .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
+                .waitSeconds(1.0)
+                .setReversed(false)
+
+                // Go pick up second line of Artifacts
+                .setReversed(true)
+                .splineToSplineHeading(new Pose2d(12, 24, Math.toRadians(90)), Math.toRadians(0))
+                .setReversed(false)
+                .lineToY(52, (pose2dDual, posePath, v) -> 10)
+
+                // Line up and shoot
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
+                .waitSeconds(1.0)
+                .setReversed(false)
+
+                // Go park to the side near goal
+                .setTangent(Math.toRadians(60))
+                .splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
+                .waitSeconds(0.5)
+                .build();
+    }
     public static Action buildFarSideAuto1(RoadRunnerBotEntity bot) {
+        // Line up to shoot
         return bot
                 .getDrive()
                 .actionBuilder(new Pose2d(62, 18, Math.toRadians(180)))
@@ -141,11 +186,12 @@ public class MeepMeepTesting {
                 .splineTo(new Vector2d(48, 61), Math.toRadians(60))
                 .setTangent(0)
                 .lineToX(68, ((pose2dDual, posePath, v) -> 10))
+                .splineTo(new Vector2d( 45, 0), Math.toRadians(90))
+                .lineToX(58)
+                .lineToY(0)
 
-                // Line up to shoot
                 .setReversed(true)
-                .setTangent(Math.toRadians(-100))
-                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
+                .setTangent(Math.toRadians(-100))// .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
                 .waitSeconds(1.0)
                 .setReversed(false)
 
@@ -166,7 +212,7 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                buildFarSideAuto1(myBot)
+                buildGoalSideAutoWithGate(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
