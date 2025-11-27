@@ -38,6 +38,10 @@ public class ShooterSubsystem {
 
     private RPMTracker rpmTracker;
 
+    private double velocitySmoothed10 = -1;
+    private double velocitySmoothed20 = -1;
+    private double velocitySmoothed30 = -1;
+
      public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
          this.telemetry = telemetry;
          shooterWheel = hardwareMap.get(DcMotorEx.class, "shooter");
@@ -97,6 +101,12 @@ public class ShooterSubsystem {
 
      public void loop(TelemetryPacket p) {
          double currentRpm = getRpm();
+
+         // Infinite impulse response low-pass filters for experimentation
+         velocitySmoothed10 = velocitySmoothed10 * (1 - 0.1) + currentRpm * 0.1;
+         velocitySmoothed20 = velocitySmoothed20 * (1 - 0.2) + currentRpm * 0.2;
+         velocitySmoothed30 = velocitySmoothed30 * (1 - 0.3) + currentRpm * 0.3;
+
          double newPower = feedforward.calculate(targetRPM)
                  + pid.calculate(currentRpm, targetRPM);
          shooterWheel.setPower(newPower);
@@ -110,6 +120,9 @@ public class ShooterSubsystem {
          if (p != null) {
              p.put("Flywheel Speed (Raw RPM)", currentRpm);
              p.put("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
+             p.put("Flywheel Speed (LPF 10)", velocitySmoothed10);
+             p.put("Flywheel Speed (LPF 20)", velocitySmoothed20);
+             p.put("Flywheel Speed (LPF 30)", velocitySmoothed30);
              p.put("Flywheel Drop (RPM)", rpmDrop.rpm);
              p.put("Flywheel Drop (Rate)",
                      rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
@@ -120,6 +133,9 @@ public class ShooterSubsystem {
          } else {
              telemetry.addData("Flywheel Speed (Raw RPM)", currentRpm);
              telemetry.addData("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
+             telemetry.addData("Flywheel Speed (LPF 10)", velocitySmoothed10);
+             telemetry.addData("Flywheel Speed (LPF 20)", velocitySmoothed20);
+             telemetry.addData("Flywheel Speed (LPF 30)", velocitySmoothed30);
              telemetry.addData("Flywheel Drop RPM", rpmDrop.rpm);
              telemetry.addData("Flywheel Drop Rate",
                      rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
