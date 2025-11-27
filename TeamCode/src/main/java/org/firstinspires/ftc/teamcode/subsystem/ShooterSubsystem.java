@@ -38,9 +38,9 @@ public class ShooterSubsystem {
 
     private RPMTracker rpmTracker;
 
-    private double velocitySmoothed10 = -1;
-    private double velocitySmoothed20 = -1;
-    private double velocitySmoothed30 = -1;
+    private double velocitySmoothed10 = 0;
+    private double velocitySmoothed20 = 0;
+    private double velocitySmoothed30 = 0;
 
      public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
          this.telemetry = telemetry;
