@@ -21,10 +21,10 @@ public class ShooterSubsystem {
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
     public static double TARGET_TOLERANCE = 40;
 
-    public static double CLOSE_RANGE = 32.9;
-    public static double CLOSE_RPM = 2525;
-    public static double FAR_RANGE = 69.1;
-    public static double FAR_RPM = 3275;
+    public static double CLOSE_RANGE = 24.05;
+    public static double CLOSE_RPM = 2490;
+    public static double FAR_RANGE = 57;
+    public static double FAR_RPM = 3290;
 
     PIDController pid;
     SimpleMotorFeedforward feedforward;
