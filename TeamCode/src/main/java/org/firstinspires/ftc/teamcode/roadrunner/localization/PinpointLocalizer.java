@@ -10,6 +10,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 
 import java.util.Objects;
 
@@ -33,9 +35,26 @@ public final class PinpointLocalizer implements Localizer {
         // Direction of the Y (strafe) encoder
         public GoBildaPinpointDriver.EncoderDirection yEncoderDirection =
                 GoBildaPinpointDriver.EncoderDirection.REVERSED;
+
+        Params(RobotVersion v) {
+            switch (v) {
+                case STATES:
+                    setToStatesConfig();
+                case QUALIFIERS:
+                default:
+            }
+        }
+
+        private void setToStatesConfig() {
+            xPodOffset = 0.0;
+            yPodOffset = 0.0;
+            odometryPodType = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
+            xEncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+            yEncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+        }
     }
 
-    public static Params PARAMS = new Params();
+    public static Params PARAMS = new Params(Constants.ROBOT_VERSION);
 
     public final GoBildaPinpointDriver driver;
 

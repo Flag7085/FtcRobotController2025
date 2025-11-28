@@ -54,6 +54,8 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.roadrunner.localization.Localizer;
 import org.firstinspires.ftc.teamcode.roadrunner.localization.PinpointLocalizer;
 import org.firstinspires.ftc.teamcode.roadrunner.messages.DriveCommandMessage;
@@ -67,6 +69,7 @@ import java.util.List;
 
 @Config
 public final class MecanumDrive {
+
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
@@ -106,9 +109,46 @@ public final class MecanumDrive {
         public double axialVelGain = 1.0;
         public double lateralVelGain = 0.0;
         public double headingVelGain = 0.0; // shared with turn
+
+        Params(RobotVersion v) {
+            switch (v) {
+                case STATES:
+                    setVersionTwoParams();
+                case QUALIFIERS:
+                default:
+            }
+        }
+
+        public void setVersionTwoParams() {
+            inPerTick = 0.0;
+            lateralInPerTick = 0.0;
+            trackWidthTicks = 0.0;
+
+            // feedforward parameters (in tick units)
+            kS = 0.0;
+            kV = 0.0;
+            kA = 0.0;
+
+            // path profile parameters (in inches)
+            maxWheelVel = 50;
+            minProfileAccel = -30;
+            maxProfileAccel = 50;
+
+            // turn profile parameters (in radians)
+            maxAngVel = Math.PI; // shared with path
+            maxAngAccel = Math.PI;
+
+            axialGain = 0.0;
+            lateralGain = 0.0;
+            headingGain = 0.0;
+
+            axialVelGain = 0.0;
+            lateralVelGain = 0.0;
+            headingVelGain = 0.0;
+        }
     }
 
-    public static Params PARAMS = new Params();
+    public static Params PARAMS = new Params(Constants.ROBOT_VERSION);
 
     public final MecanumKinematics kinematics = new MecanumKinematics(
             PARAMS.inPerTick * PARAMS.trackWidthTicks, PARAMS.inPerTick / PARAMS.lateralInPerTick);
@@ -254,8 +294,16 @@ public final class MecanumDrive {
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // TODO: reverse motor directions if needed
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        switch (Constants.ROBOT_VERSION) {
+            case QUALIFIERS:
+                leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+                leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+                break;
+            case STATES:
+                leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+                leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+                break;
+        }
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
