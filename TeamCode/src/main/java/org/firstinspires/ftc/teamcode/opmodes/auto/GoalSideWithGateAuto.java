@@ -59,8 +59,11 @@ public class GoalSideWithGateAuto extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
                 // .lineToX()
                 // Go to the gate
-                .splineToLinearHeading(new Pose2d(0, 59, Math.toRadians(180)), Math.toRadians(90))
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d(-5, 60, Math.toRadians(180)), Math.toRadians(90))
+                .waitSeconds(3.5)
                 // Line up and shoot
+                .setTangent(Math.toRadians(-90))
                 .setReversed(true)
                 .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
                 .endTrajectory();

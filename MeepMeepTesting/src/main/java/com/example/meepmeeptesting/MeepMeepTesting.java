@@ -141,6 +141,7 @@ public class MeepMeepTesting {
                 .splineToLinearHeading(new Pose2d(0, 59, Math.toRadians(180)), Math.toRadians(90))
                 // Line up and shoot
                 .waitSeconds(2.0)
+                .setTangent(Math.toRadians(-90))
                 .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
                 .waitSeconds(1.0)
                 .setReversed(false)
@@ -197,6 +198,54 @@ public class MeepMeepTesting {
 
                 // Move out of launch zone
                 .lineToYConstantHeading(24)
+                .build();
+    }
+    
+    public static Action build12ArtifactCloseAuto(RoadRunnerBotEntity bot) {
+        return bot
+                // Pre-loaded
+                .getDrive()
+                .actionBuilder(new Pose2d(-50, 50, Math.toRadians(126.5)))
+                .setReversed(true)
+                .splineTo(new Vector2d(-34, 35), Math.toRadians(-45))
+
+                .waitSeconds(3.5)
+
+                // First spike mark
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d (-10, 19, Math.toRadians(90)), Math.toRadians(0))
+                .setTangent(Math.toRadians(90))
+                .lineToY(50)
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d (-36, 35, Math.toRadians(135)), Math.toRadians(180))
+
+                .waitSeconds(3.5)
+
+                // Second spike mark
+                .setReversed(true)
+                .splineToSplineHeading(new Pose2d (12, 20, Math.toRadians(90)), Math.toRadians(0))
+                .setTangent(Math.toRadians(90))
+                .lineToY(50)
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d (-37, 35, Math.toRadians(135)), Math.toRadians(180))
+
+                .waitSeconds(3.5)
+
+                // Third spike mark
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d (36, 18, Math.toRadians(90)), Math.toRadians(0))
+                .setTangent(Math.toRadians(90))
+                .lineToY(50)
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d (-36, 35, Math.toRadians(135)), Math.toRadians(180))
+
+                .waitSeconds(3.5)
+
+                // Park outside launch zone
+                .setTangent(Math.toRadians(45))
+                .splineToLinearHeading(new Pose2d (-16, 50, Math.toRadians(180)), Math.toRadians(0))
+                // TO DO: using the bot methods documented in our demo Action,
+                // develop your new test route here
                 .build();
     }
 

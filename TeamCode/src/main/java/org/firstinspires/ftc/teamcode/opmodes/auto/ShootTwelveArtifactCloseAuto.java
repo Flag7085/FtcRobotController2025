@@ -51,7 +51,7 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
         pickUpFirstRow = start.fresh()
                 // Line up for intake
                 .setReversed(true)
-                .splineToLinearHeading(new Pose2d (-11, 25, Math.toRadians(90)), Math.toRadians(0))
+                .splineToLinearHeading(new Pose2d (-10, 19, Math.toRadians(90)), Math.toRadians(0))
                 .setTangent(Math.toRadians(90))
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
@@ -60,13 +60,13 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
 
                 // Line up and shoot
                 .setTangent(Math.toRadians(-90))
-                .splineToLinearHeading(new Pose2d (-34, 35, Math.toRadians(135)), Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d (-36, 35, Math.toRadians(135)), Math.toRadians(180))
                 .endTrajectory();
 
         pickUpSecondRow = pickUpFirstRow.fresh()
                 // Go pick up second line of Artifacts
                 .setReversed(true)
-                .splineToSplineHeading(new Pose2d (12, 25, Math.toRadians(90)), Math.toRadians(0))
+                .splineToSplineHeading(new Pose2d (12, 20, Math.toRadians(90)), Math.toRadians(0))
                 .setTangent(Math.toRadians(90))
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
@@ -74,13 +74,13 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
                 .lineToY(50, (pose2dDual, posePath, v) -> 10)
                 // Line up and shoot
                 .setTangent(Math.toRadians(-90))
-                .splineToLinearHeading(new Pose2d (-34, 35, Math.toRadians(135)), Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d (-37, 35, Math.toRadians(135)), Math.toRadians(180))
                 .endTrajectory();
 
         pickUpThirdRow = pickUpSecondRow.fresh()
                 // Go pick up third line of Artifacts
                 .setReversed(true)
-                .splineToLinearHeading(new Pose2d (36, 25, Math.toRadians(90)), Math.toRadians(0))
+                .splineToLinearHeading(new Pose2d (36, 18, Math.toRadians(90)), Math.toRadians(0))
                 .setTangent(Math.toRadians(90))
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
@@ -88,7 +88,7 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
                 .lineToY(50, (pose2dDual, posePath, v) -> 10)
                 // Line up and shoot
                 .setTangent(Math.toRadians(-90))
-                .splineToLinearHeading(new Pose2d (-34, 35, Math.toRadians(135)), Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d (-36, 35, Math.toRadians(135)), Math.toRadians(180))
                 .endTrajectory();
 
         parkOutsideLaunchZone = pickUpThirdRow.fresh()
