@@ -19,12 +19,18 @@ public enum Alliance {
                     p.position.x,
                     -1 * p.position.y,
                     p.heading.inverse().toDouble()),
-            20
+            20,
+            // Forward (0 degrees field-centric driving) is -90 deg. on
+            // the field.
+            -90
     ),
     RED(
             new IdentityPoseMap(),
             (Pose2d p) -> p,
-            24
+            24,
+            // Forward (0 degrees field-centric driving) is +90 deg. on
+            // the field.
+            90
     );
 
     // For RoadRunner trajectories
@@ -36,14 +42,21 @@ public enum Alliance {
     // What ID is the april tag for this alliance's goal?
     final private int goalAprilTagId;
 
+    // The heading offset in degrees to be used for field-centric driving, relative
+    // to standard field coordinates.  Coming from Autonomous, our robot pose will
+    // reflect standard field coordinates/orientation.
+    final private int headingOffset;
+
     Alliance(
             PoseMap poseMap,
             Function<Pose2d, Pose2d> poseTransform,
-            int goalAprilTagId
+            int goalAprilTagId,
+            int headingOffset
     ) {
         this.poseMap = poseMap;
         this.poseTransform = poseTransform;
         this.goalAprilTagId = goalAprilTagId;
+        this.headingOffset = headingOffset;
     }
 
     public PoseMap getPoseMap() {
@@ -56,5 +69,9 @@ public enum Alliance {
 
     public int getGoalAprilTagId() {
         return goalAprilTagId;
+    }
+
+    public int getHeadingOffset() {
+        return headingOffset;
     }
 }

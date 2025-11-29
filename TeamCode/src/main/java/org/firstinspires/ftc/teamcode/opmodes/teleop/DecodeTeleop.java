@@ -152,9 +152,25 @@ public class DecodeTeleop extends OpMode {
         // If you press the A button, then you reset the Yaw to be zero from the way
         // the robot is currently pointing
         if (gamepad1.share) {
-            //imu.resetYaw();
+            // TODO - adjust for driver preference.
+            //
+            // Since we adjust from standard field coordinates/orientation into the driver's
+            // field-centric view for driving, a heading of zero here requires the reset to
+            // happen while the robot is facing away from the goal towards the audience.
+            //
+            // We typically train drivers to reset while the robot is facing "forward"
+            // from their perspective, so IF there is an alliance selected, we need to
+            // subtract out the offset that will be added back in during driving
+            // computations.
+            //
+            double newHeading = alliance == null ? 0.0 : alliance.getHeadingOffset();
+            // Only update orientation, keep position unchanged...
             Pose2d currentPose = drive.localizer.getPose();
-            drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0.0));
+            drive.localizer.setPose(
+                    new Pose2d(
+                            currentPose.position.x,
+                            currentPose.position.y,
+                            newHeading));
         }
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
 
@@ -167,7 +183,12 @@ public class DecodeTeleop extends OpMode {
         driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
         strafe = gamepad1.left_stick_x  * driveMultiplier;
 
-        if (gamepad1.circle && goalTag != null){
+        if (gamepad1.triangle) {
+            double heading = drive.localizer.getPose().heading.toDouble();
+            double target = alliance == null ? 0.0 : alliance.getHeadingOffset();
+            turn = autoTurnController.calculate(heading, target);
+            telemetry.addData("AutoAim", "Base Alignment: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+        } else if (gamepad1.circle && goalTag != null){
             double headingError = -goalTag.getHeadingOffsetDegrees();
             turn = autoTurnController.calculate(headingError, 0);
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
@@ -266,16 +287,13 @@ public class DecodeTeleop extends OpMode {
         double theta = Math.atan2(forward, right);
         double r = Math.hypot(right, forward);
 
-        double headingOffset = 0;
-        if (alliance == Alliance.RED) {
-            headingOffset = -90;
-        } else if (alliance == Alliance.BLUE) {
-            headingOffset = 90;
-        }
+        // If we have an alliance selected, then rotate from standard field orientation
+        // into the perspective from that alliance's drive station.
+        double headingOffset = alliance == null ? 0 : alliance.getHeadingOffset();
 
         // Second, rotate angle by the angle the robot is pointing
         theta = AngleUnit.normalizeRadians(
-                theta - drive.localizer.getPose().heading.toDouble() - headingOffset);
+                theta - drive.localizer.getPose().heading.toDouble() + headingOffset);
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
