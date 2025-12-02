@@ -11,6 +11,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.util.RPMTracker;
 import org.firstinspires.ftc.teamcode.util.Stopwatch;
 import org.firstinspires.ftc.teamcode.util.TrackingWindow;
@@ -59,7 +61,12 @@ public class FeederSubsystem {
         this.feederWheel = hardwareMap.get(DcMotorEx.class, "kicker");
         feederWheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         feederWheel.setDirection(FEEDER_DIRECTION);
-        feederWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+        if(Constants.ROBOT_VERSION == RobotVersion.STATES){
+            feederWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        } else {
+            feederWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        }
 
         this.telemetry = telemetry;
 
