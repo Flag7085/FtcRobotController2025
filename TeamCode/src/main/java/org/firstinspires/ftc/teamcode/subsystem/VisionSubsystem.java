@@ -92,7 +92,7 @@ public abstract class VisionSubsystem {
 
     private void setTrackingIndicatorLight(boolean isTrackingGoalTag) {
         if (isTrackingGoalTag) {
-            indicatorLight.setColor(GobildaIndicatorLight.Color.YELLOW_GREEN);
+            indicatorLight.setColor(GobildaIndicatorLight.Color.BLUE);
         } else {
             indicatorLight.setColor(GobildaIndicatorLight.Color.OFF);
         }
