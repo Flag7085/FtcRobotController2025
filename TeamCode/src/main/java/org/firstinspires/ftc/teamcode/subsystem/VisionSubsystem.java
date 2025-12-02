@@ -34,6 +34,16 @@ public abstract class VisionSubsystem {
         return new LimelightVisionSubsystem(hardwareMap, telemetry);
     }
 
+    /**
+     * No vision - just return null goal tag.
+     */
+    public static VisionSubsystem createWithNoVision(HardwareMap hardwareMap, Telemetry telemetry) {
+        return new VisionSubsystem(hardwareMap, telemetry) {
+            @Override public void turnOnFtcDashboardStream(double maxFps) {}
+            @Override protected GoalTag findGoalTagImpl() {return null;}
+        };
+    }
+
     public interface GoalTag {
         /**
          * This returns the heading of the april tag relative to the camera/robot.
