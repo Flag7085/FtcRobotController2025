@@ -39,8 +39,15 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
@@ -92,6 +99,8 @@ public class DecodeTeleop extends OpMode {
     // IMU imu;
     MecanumDrive drive;  // Add Roadrunner drive object
 
+    //public class TestBenchColor
+
     ShooterSubsystem shooterSubsystem;
     FeederSubsystem feederSubsystem;
     IntakeSubsystem intakeSubsystem;
@@ -102,6 +111,24 @@ public class DecodeTeleop extends OpMode {
 
     // For tracking loop time
     long previousTime = 0;
+
+    NormalizedColorSensor colorSensor;
+
+    public enum DetectedColor {
+        PURPLE,
+        GREEN,
+        UNKNOWN
+    }
+
+    public DetectedColor checkProximity(){
+        double distance = ((DistanceSensor) colorSensor).getDistance(DistanceUnit.CM);
+
+        telemetry.addData("distance", distance);
+
+        // TODO add if statements for specific colors added
+
+        return DetectedColor.UNKNOWN;
+    }
 
     @Override
     public void init() {
@@ -134,6 +161,8 @@ public class DecodeTeleop extends OpMode {
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
         telemetry.addData(">", "Touch START to start OpMode");
+
+        //colorSensor = hardwareMap.get(NormalizedColorSensor.class, "proximity");
     }
 
     @Override
