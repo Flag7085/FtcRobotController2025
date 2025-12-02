@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 public class StatesPrototypeTestingTeleop extends OpMode {
     public static double DRIVE_SPEED = 0.8;
     public static double TURN_SPEED = 0.6;
-    public static boolean ENABLE_DRIVING = false;
+    public static boolean ENABLE_DRIVING = true;
 
     IntakeSubsystem intake;
     FeederSubsystem feeder;
@@ -55,11 +55,15 @@ public class StatesPrototypeTestingTeleop extends OpMode {
             intake.start();
         } else if (gamepad1.square) {
             intake.reverse();
+        } else {
+            intake.stop();
         }
 
         if (gamepad1.circle) {
             boolean justTurnOn = true;
             feeder.startImplementation(justTurnOn);
+        } else {
+            feeder.stop();
         }
 
         if (ENABLE_DRIVING) {
