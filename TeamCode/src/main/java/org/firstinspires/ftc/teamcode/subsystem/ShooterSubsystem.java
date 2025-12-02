@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
@@ -21,10 +22,30 @@ public class ShooterSubsystem {
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
     public static double TARGET_TOLERANCE = 40;
 
-    public static double CLOSE_RANGE = 24.05;
-    public static double CLOSE_RPM = 2490;
-    public static double FAR_RANGE = 57;
-    public static double FAR_RPM = 3290;
+    public static double CLOSE_RANGE;
+    public static double CLOSE_RPM;
+    public static double FAR_RANGE;
+    public static double FAR_RPM;
+    public static double LONG_SHOT_RPM; // > 90 inches, i.e. across the field
+
+    static {
+        switch (Constants.ROBOT_VERSION) {
+            case STATES:
+                CLOSE_RANGE = 24.05;
+                CLOSE_RPM = 2490;
+                FAR_RANGE = 57;
+                FAR_RPM = 3290;
+                LONG_SHOT_RPM = 4010;
+            case QUALIFIERS:
+            default:
+                CLOSE_RANGE = 24.05;
+                CLOSE_RPM = 2490;
+                FAR_RANGE = 57;
+                FAR_RPM = 3290;
+                LONG_SHOT_RPM = 4010;
+                break;
+        }
+    }
 
     PIDController pid;
     SimpleMotorFeedforward feedforward;
@@ -160,11 +181,8 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
-         telemetry.addData("Shooter Range", rangeInInches);
-         rangeInInches += 0;
-
          if (rangeInInches > 90) {
-             return 4010;
+             return LONG_SHOT_RPM;
          }
 
          double rangeClose = CLOSE_RANGE;

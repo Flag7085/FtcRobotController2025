@@ -49,6 +49,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
@@ -81,6 +82,7 @@ public class DecodeTeleop extends OpMode {
     public static boolean LOG_DRIVE_MOTOR_POWERS = true;
 
     public static double SHOOTER_SPEED_RPM = 3000;
+    public static boolean USE_FIXED_SHOOTER_RPM = false;
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
@@ -148,7 +150,13 @@ public class DecodeTeleop extends OpMode {
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap, telemetry);
         feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
-        visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
+
+        if (Constants.ROBOT_VERSION == RobotVersion.STATES) {
+            visionSubsystem = VisionSubsystem.createWithNoVision(hardwareMap, telemetry);
+        } else {
+            visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
+        }
+
         visionSubsystem.turnOnFtcDashboardStream(10);
 
         if (alliance != null) {
@@ -158,6 +166,7 @@ public class DecodeTeleop extends OpMode {
         drive = new MecanumDrive(hardwareMap, startingPose);
 
         // Wait for the DS start button to be touched.
+        telemetry.addLine(String.format("Done Initializing %s Robot", Constants.ROBOT_VERSION.name()));
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
         telemetry.addData(">", "Touch START to start OpMode");
@@ -237,7 +246,11 @@ public class DecodeTeleop extends OpMode {
         // Basic shooting logic
         double targetRPMs = SHOOTER_SPEED_RPM;
         if (goalTag != null) {
-            targetRPMs = shooterSubsystem.calculateRPMs(goalTag.getRangeInches());
+            double range = goalTag.getRangeInches();
+            telemetry.addData("Range (RPM)", range);
+            if (!USE_FIXED_SHOOTER_RPM) {
+                targetRPMs = shooterSubsystem.calculateRPMs(range);
+            }
         }
         shooterSubsystem.setRPM(targetRPMs);
         shooterSubsystem.loop();  // This updates PID/power, ALWAYS need to call shooterSubsystem.loop()

@@ -8,6 +8,8 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.teamcode.Constants;
 
 import java.util.List;
 
@@ -65,7 +67,7 @@ public class LimelightVisionSubsystem extends VisionSubsystem {
         telemetry.addData("Goal IDs", goalTagIds);
         if (result != null && result.isValid()) {
             List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducial : fiducials){
+            for (LLResultTypes.FiducialResult fiducial : fiducials) {
                 telemetry.addLine(String.format("Fiducial: %s", fiducial));
                 if (goalTagIds.contains(fiducial.getFiducialId())) {
                     return fiducial;
@@ -95,10 +97,9 @@ public class LimelightVisionSubsystem extends VisionSubsystem {
                 // Z+ → Pointing out of the camera
                 //
                 // Naively assume camera pitch is 0 for consistency, so the horizontal plane is X-Z
-                double distanceInMeters = Math.sqrt(
-                        Math.pow( tag.getTargetPoseCameraSpace().getPosition().x, 2) +
-                        Math.pow( tag.getTargetPoseCameraSpace().getPosition().z, 2));
-                return distanceInMeters * 39.3700787402;
+                Position p = tag.getTargetPoseCameraSpace().getPosition();
+                double distanceInMeters = Math.hypot(p.x, p.z);
+                return distanceInMeters * Constants.INCHES_PER_METER;
             }
         };
     }
