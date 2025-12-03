@@ -14,11 +14,15 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
 public class ShooterSubsystem {
-    public static DcMotorSimple.Direction SHOOTER_DIRECTION = DcMotorSimple.Direction.FORWARD;
+    public static DcMotorSimple.Direction SHOOTER_DIRECTION =
+            Constants.ROBOT_VERSION == RobotVersion.QUALIFIERS ?
+                    DcMotorSimple.Direction.FORWARD :
+                    DcMotorSimple.Direction.REVERSE;
     public static double SHOOTER_TICKS_PER_REVOLUTION = 28;
     public static double TARGET_TOLERANCE = 40;
 
