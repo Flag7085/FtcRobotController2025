@@ -26,7 +26,8 @@ import java.util.Timer;
 
 @Config
 public class FeederSubsystem {
-    public static double FEEDER_SPEED = 0.8;
+    public static double FEEDER_SPEED =
+            Constants.ROBOT_VERSION == RobotVersion.QUALIFIERS ? 0.8 : 0.7;
     public static DcMotorSimple.Direction FEEDER_DIRECTION = DcMotorSimple.Direction.FORWARD;
 
     public static double TRIGGER_DELAY_TIME_MS = 250;

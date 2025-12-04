@@ -8,10 +8,15 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 
 @Config
 public class IntakeSubsystem {
-    public static DcMotorSimple.Direction INTAKE_DIRECTION = DcMotorSimple.Direction.FORWARD;
+    public static DcMotorSimple.Direction INTAKE_DIRECTION =
+            Constants.ROBOT_VERSION == RobotVersion.QUALIFIERS ?
+                    DcMotorSimple.Direction.FORWARD :
+                    DcMotorSimple.Direction.REVERSE;
     public static double INTAKE_SPEED = 1.0;
     DcMotorEx intakeWheels;
 
