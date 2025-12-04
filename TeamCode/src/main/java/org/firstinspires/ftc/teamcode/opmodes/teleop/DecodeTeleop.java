@@ -114,24 +114,6 @@ public class DecodeTeleop extends OpMode {
     // For tracking loop time
     long previousTime = 0;
 
-    NormalizedColorSensor colorSensor;
-
-    public enum DetectedColor {
-        PURPLE,
-        GREEN,
-        UNKNOWN
-    }
-
-    public DetectedColor checkProximity(){
-        double distance = ((DistanceSensor) colorSensor).getDistance(DistanceUnit.CM);
-
-        telemetry.addData("distance", distance);
-
-        // TODO add if statements for specific colors added
-
-        return DetectedColor.UNKNOWN;
-    }
-
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -170,8 +152,6 @@ public class DecodeTeleop extends OpMode {
         telemetry.addLine("Who Can Do It??");
         telemetry.addLine("We Can Do It!!!");
         telemetry.addData(">", "Touch START to start OpMode");
-
-        //colorSensor = hardwareMap.get(NormalizedColorSensor.class, "proximity");
     }
 
     @Override
