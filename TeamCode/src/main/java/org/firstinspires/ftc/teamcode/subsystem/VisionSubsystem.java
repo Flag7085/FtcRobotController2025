@@ -68,7 +68,7 @@ public abstract class VisionSubsystem {
 
     protected Telemetry telemetry;
 
-    protected VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
+   protected VisionSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
         this.indicatorLight = new GobildaIndicatorLight(hardwareMap, "ledIndicator");
         this.telemetry = telemetry;
     }
