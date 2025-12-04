@@ -57,7 +57,8 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
                 .lineToY(50, (pose2dDual, posePath, v) -> 10)
-
+                .splineToLinearHeading(new Pose2d(-4, 59, Math.toRadians(180)), Math.toRadians(90))
+                .waitSeconds(2.0)
                 // Line up and shoot
                 .setTangent(Math.toRadians(-90))
                 .splineToLinearHeading(new Pose2d (-36, 35, Math.toRadians(135)), Math.toRadians(180))

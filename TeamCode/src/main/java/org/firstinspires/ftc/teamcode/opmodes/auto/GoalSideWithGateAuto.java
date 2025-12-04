@@ -21,7 +21,7 @@ public class GoalSideWithGateAuto extends DecodeAuto {
     TrajectoryActionBuilder parkOutsideLaunchZone;
 
     protected GoalSideWithGateAuto(Alliance alliance) {
-        super(alliance, new Pose2d(-63, 41, Math.toRadians(180)));
+        super(alliance, new Pose2d(-50, 50, Math.toRadians(126.5)));
     }
 
     @Autonomous(name = "Goal with gate, Red - Shoot 9")
@@ -60,7 +60,7 @@ public class GoalSideWithGateAuto extends DecodeAuto {
                 // .lineToX()
                 // Go to the gate
                 .setReversed(true)
-                .splineToLinearHeading(new Pose2d(-5, 60, Math.toRadians(180)), Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-4, 60, Math.toRadians(180)), Math.toRadians(90))
                 .waitSeconds(3.5)
                 // Line up and shoot
                 .setTangent(Math.toRadians(-90))
