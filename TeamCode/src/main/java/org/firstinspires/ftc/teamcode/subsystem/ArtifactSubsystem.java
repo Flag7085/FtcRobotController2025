@@ -1,76 +1,109 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
-import android.hardware.Sensor;
-
-import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+/**
+ * This subsystem detects the presence of Artifacts in the robot and sets an indicator
+ * light based on current state:
+ *
+ * Red - no artifacts detected
+ * Yellow - at least one artifact detected
+ * Green - robot is full
+ */
+@Config
 public class ArtifactSubsystem {
-    NormalizedColorSensor colorSensorOne;
-    NormalizedColorSensor colorSensorTwo;
-    protected GobildaIndicatorLight indicatorLight;
+    public static double DEFAULT_PROXIMITY_THRESHOLD = 0.5;
+    public static double PROXIMITY_ONE_THRESHOLD = DEFAULT_PROXIMITY_THRESHOLD;
+    public static double PROXIMITY_FULL_THRESHOLD = DEFAULT_PROXIMITY_THRESHOLD;
 
-    double maxDistance; // max distance, the farthest to the sensor an artifact can be
-    double minDistance; // min distance, the closet to the sensor the artifact can be
+    // Actually a NormalizedColorSensor.
+    // Rev ColorSensorV3 objects also implement the DistanceSensor interface, which
+    // is all that we care about for detecting proximity...
+    private DistanceSensor colorSensorOne;
+    private DistanceSensor colorSensorFull;
+    private GobildaIndicatorLight indicatorLight;
 
-    double colorSensorOneDistance;
-    double colorSensorTwoDistance;
+    private long lastUpdatedMillis = 0;
 
     public void init (HardwareMap hwMap) {
-        colorSensorOne = hwMap.get (NormalizedColorSensor.class, "Proximity_1");
-        colorSensorTwo = hwMap.get (NormalizedColorSensor.class, "Proximity_3");
+        // proximity one monitors just under the feeder wheel and indicates whether at least
+        // one artifact is present.
 
-        // proximity 1 means that there is one artifact, proximity 3 means there is three artifacts
+        colorSensorOne = (DistanceSensor)hwMap.get(NormalizedColorSensor.class, "proximity one");
 
-        this.indicatorLight = new GobildaIndicatorLight(hwMap, "ledIndicator");
+        // proximity full monitors just inside the front of the intake and indicates whether
+        // the robot is full
+        colorSensorFull = (DistanceSensor)hwMap.get(NormalizedColorSensor.class, "proximity full");
 
+        // Red    - no artifacts detected
+        // Yellow - at least one artifact detected
+        // Green  - robot is full
+        this.indicatorLight = new GobildaIndicatorLight(hwMap, "artifact indicator");
     }
 
-    public boolean getDetectedColor (Telemetry telemetry) {
-        NormalizedRGBA colors = colorSensorOne.getNormalizedColors(); // return 4 values
+    /**
+     * For teleop usage - check for artifacts and update the indicator light accordingly
+     */
+    public void checkForArtifacts(Telemetry telemetry) {
+        long now = System.currentTimeMillis();
 
-        maxDistance = 10;
-        minDistance = 2;
+        // Don't update every single loop!
+        // These color sensors are on the I2C bus which takes 2ms per read.  We want to keep
+        // our overall loop times as low as possible.
+        //
+        // This should be relatively slow to change and is kind of pointless to update much
+        // faster than our operators can react.
+        //
+        if (now - lastUpdatedMillis < 200) {
+            return;
+        }
+        lastUpdatedMillis = now;
 
+        // Hopefully these don't flicker too much - we may need to
+        // slap on a low-pass filter to stabilize...
+        boolean atLeastOneArtifact = checkProximityOne(telemetry);
+        boolean robotIsFull = checkProximityFull(telemetry);
 
-
-        colorSensorOneDistance = ((DistanceSensor) colorSensorOne).getDistance(DistanceUnit.CM);
-        colorSensorTwoDistance = ((DistanceSensor) colorSensorTwo).getDistance(DistanceUnit.CM);
-
-        boolean colorSensorOneHasArtifact = colorSensorOneDistance < maxDistance && colorSensorOneDistance > minDistance;
-        boolean colorSensorTwoHasArtifact = colorSensorOneDistance < maxDistance && colorSensorOneDistance > minDistance;
-
-        if (colorSensorOneHasArtifact) {
-            // if sensorOneDistance is between maxDistance and minDistance that means we have at least one artifact
-
-            indicatorLight.setColor(GobildaIndicatorLight.Color.YELLOW);
-
-            // what color should the light be? Yellow
-        } else if (colorSensorOneHasArtifact && !colorSensorTwoHasArtifact) {
-            // else if sensorOneDistance is between maxDistance and minDistance
-            // and sensorTwoDistance is NOT between maxDistance and minDistance that means we have two artifacts
-
-            indicatorLight.setColor(GobildaIndicatorLight.Color.BLUE);
-
-            // what color should the light be? Blue
-        } else if (colorSensorOneHasArtifact && colorSensorTwoHasArtifact) {
-            // else if sensorOneDistance is between maxDistance and minDistance
-            // and sensorTwoDistance is between maxDistance and minDistance that means we have three artifacts
-
+        if (robotIsFull) {
+            telemetry.addData("Artifact Count", 3);
             indicatorLight.setColor(GobildaIndicatorLight.Color.GREEN);
-
-            // what color should the light be? Green
+        } else if (atLeastOneArtifact) {
+            telemetry.addData("Artifact Count", 1);
+            indicatorLight.setColor(GobildaIndicatorLight.Color.YELLOW);
         } else {
+            telemetry.addData("Artifact Count", 0);
             indicatorLight.setColor(GobildaIndicatorLight.Color.RED);
         }
+    }
 
-        return false;
+    /**
+     * Checks a specific sensor for the presence of an Artifact.  Don't use this
+     * in teleop, use checkForArtifacts instead.
+     *
+     * @return true if an artifact is detected in this slot, false if not.
+     */
+    public boolean checkProximityOne(Telemetry telemetry) {
+        double distance = colorSensorOne.getDistance(DistanceUnit.MM);
+        telemetry.addData("Proximity One (mm)", distance);
+        return  distance < PROXIMITY_ONE_THRESHOLD;
+    }
+
+    /**
+     * Checks a specific sensor for the presence of an Artifact.  Don't use this
+     * in teleop, use checkForArtifacts instead.
+     *
+     * @return true if an artifact is detected in this slot, false if not.
+     */
+    public boolean checkProximityFull(Telemetry telemetry) {
+        double distance = colorSensorFull.getDistance(DistanceUnit.MM);
+        telemetry.addData("Proximity Full (mm)", distance);
+        return distance < PROXIMITY_FULL_THRESHOLD;
     }
 
 }
