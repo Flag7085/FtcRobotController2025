@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 
 @Config
 public class GoalSideAutoStates extends DecodeAuto {
-    public static double SHOOTER_RPM_TARGET = 3000;
+    public static double SHOOTER_RPM_TARGET = 3050;
 
     TrajectoryActionBuilder start;
     TrajectoryActionBuilder pickUpFirstRow;
@@ -118,13 +118,13 @@ public class GoalSideAutoStates extends DecodeAuto {
                 new SequentialAction(
                     shooter.setRpmAction(SHOOTER_RPM_TARGET),
                     start.build(),
-                    shootingActionSequence(),
+                    shootingActionSequence(true),
                     pickUpFirstRow.build(),
-                    shootingActionSequence(),
+                    shootingActionSequence(true),
                     pickUpSecondRow.build(),
-                    shootingActionSequence(),
+                    shootingActionSequence(true),
                     pickUpThirdRow.build(),
-                    shootingActionSequence(),
+                    shootingActionSequence(true),
                     parkOutsideLaunchZone.build()
                 )
             )

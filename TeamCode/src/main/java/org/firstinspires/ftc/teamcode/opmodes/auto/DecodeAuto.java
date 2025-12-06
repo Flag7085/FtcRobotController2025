@@ -68,6 +68,10 @@ public abstract class DecodeAuto extends LinearOpMode {
     }
 
     protected Action shootingActionSequence() {
+        return shootingActionSequence(false);
+    }
+
+    protected Action shootingActionSequence(boolean justShoot) {
         if (Constants.ROBOT_VERSION == RobotVersion.STATES) {
             return new SequentialAction(
                     intake.startIntakeAction(),
