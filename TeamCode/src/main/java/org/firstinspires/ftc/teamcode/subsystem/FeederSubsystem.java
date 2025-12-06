@@ -104,6 +104,10 @@ public class FeederSubsystem {
     }
 
     public Action shootOne() {
+        return shootOne(false);
+    }
+
+    public Action shootOne(boolean justShoot) {
         return new Action() {
             final TrackingWindow<Double> trackingWindow = new TrackingWindow<>(6);
             final Stopwatch delayStopwatch = new Stopwatch();
@@ -173,8 +177,11 @@ public class FeederSubsystem {
                 telemetryPacket.put("Triggered", triggerCount);
                 telemetryPacket.put("Triggered V2", triggerCountV2);
 
-                //start();
-                latched_start();
+                if (justShoot) {
+                    startImplementation(true);
+                } else {
+                    latched_start();
+                }
                 return true;
             }
         };
