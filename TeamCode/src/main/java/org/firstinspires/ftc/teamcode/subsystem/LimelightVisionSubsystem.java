@@ -50,25 +50,25 @@ public class LimelightVisionSubsystem extends VisionSubsystem {
             latestGoodResult = result;
             latestGoodFiducial = goalTag;
             latestGoodTimestamp = now;
-            telemetry.addData("Goal Tag", "Current: %s", goalTag.getTargetPoseCameraSpace());
+            //telemetry.addData("Goal Tag", "Current: %s", goalTag.getTargetPoseCameraSpace());
         } else if (now - latestGoodTimestamp < CACHED_RESULT_TIMEOUT_MS) {
             // Didn't find a good result, but we have a recent cached result so use that.
             result = latestGoodResult;
             goalTag = latestGoodFiducial;
-            telemetry.addData("Goal Tag", "Cached : %s", goalTag.getTargetPoseCameraSpace());
+            //telemetry.addData("Goal Tag", "Cached : %s", goalTag.getTargetPoseCameraSpace());
         } else {
-            telemetry.addData("Goal Tag", "Not Found");
+            //telemetry.addData("Goal Tag", "Not Found");
         }
         return asGoalTag(result, goalTag);
     }
 
     private LLResultTypes.FiducialResult searchForGoalId(LLResult result) {
-        telemetry.addData("Results", result);
+        telemetry.addData("Limelight tx", result == null ? "null" : result.getTx());
         telemetry.addData("Goal IDs", goalTagIds);
         if (result != null && result.isValid()) {
             List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
             for (LLResultTypes.FiducialResult fiducial : fiducials) {
-                telemetry.addLine(String.format("Fiducial: %s", fiducial));
+                //telemetry.addLine(String.format("Fiducial: %s", fiducial));
                 if (goalTagIds.contains(fiducial.getFiducialId())) {
                     return fiducial;
                 }

@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.RobotVersion;
+import org.firstinspires.ftc.teamcode.util.IIRFilter;
 import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
@@ -31,6 +32,7 @@ public class ShooterSubsystem {
     public static double FAR_RANGE;
     public static double FAR_RPM;
     public static double LONG_SHOT_RPM; // > 90 inches, i.e. across the field
+    public static double LONG_SHOT_RANGE;
 
     static {
         switch (Constants.ROBOT_VERSION) {
@@ -39,14 +41,16 @@ public class ShooterSubsystem {
                 CLOSE_RPM = 2490;
                 FAR_RANGE = 57;
                 FAR_RPM = 3290;
+                LONG_SHOT_RANGE = 90;
                 LONG_SHOT_RPM = 4010;
             case QUALIFIERS:
             default:
-                CLOSE_RANGE = 24.05;
-                CLOSE_RPM = 2490;
-                FAR_RANGE = 57;
-                FAR_RPM = 3290;
-                LONG_SHOT_RPM = 4010;
+                CLOSE_RANGE = 49;
+                CLOSE_RPM = 2850;
+                FAR_RANGE = 95;
+                FAR_RPM = 3350;
+                LONG_SHOT_RANGE = 138;
+                LONG_SHOT_RPM = 3850;
                 break;
         }
     }
@@ -63,9 +67,9 @@ public class ShooterSubsystem {
 
     private RPMTracker rpmTracker;
 
-    private double velocitySmoothed10 = 0;
-    private double velocitySmoothed20 = 0;
-    private double velocitySmoothed30 = 0;
+    private IIRFilter lowPassFilter25 = new IIRFilter(0.25, 250);
+    private IIRFilter lowPassFilter50 = new IIRFilter(0.50, 250);
+    private IIRFilter lowPassFilter75 = new IIRFilter(0.75, 250);
 
      public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
          this.telemetry = telemetry;
@@ -128,9 +132,9 @@ public class ShooterSubsystem {
          double currentRpm = getRpm();
 
          // Infinite impulse response low-pass filters for experimentation
-         velocitySmoothed10 = velocitySmoothed10 * (1 - 0.1) + currentRpm * 0.1;
-         velocitySmoothed20 = velocitySmoothed20 * (1 - 0.2) + currentRpm * 0.2;
-         velocitySmoothed30 = velocitySmoothed30 * (1 - 0.3) + currentRpm * 0.3;
+         lowPassFilter25.update(currentRpm);
+         lowPassFilter50.update(currentRpm);
+         lowPassFilter75.update(currentRpm);
 
          double newPower = feedforward.calculate(targetRPM)
                  + pid.calculate(currentRpm, targetRPM);
@@ -141,35 +145,18 @@ public class ShooterSubsystem {
          double currentSmoothedRpm = rpmTracker.currentSmoothedRpm().rpm;
          RPMTracker.Point rpmDrop = rpmTracker.computeCurrentPeakToTroughDrop();
 
-
-         if (p != null) {
-             p.put("Flywheel Speed (Raw RPM)", currentRpm);
-             p.put("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
-             p.put("Flywheel Speed (LPF 10)", velocitySmoothed10);
-             p.put("Flywheel Speed (LPF 20)", velocitySmoothed20);
-             p.put("Flywheel Speed (LPF 30)", velocitySmoothed30);
-             p.put("Flywheel Drop (RPM)", rpmDrop.rpm);
-             p.put("Flywheel Drop (Rate)",
-                     rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
-             p.put("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
-             p.put("Flywheel Target RPM", targetRPM);
-             p.put("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS));
-             p.put("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS));
-         } else {
-             telemetry.addData("Flywheel Speed (Raw RPM)", currentRpm);
-             telemetry.addData("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm);
-             telemetry.addData("Flywheel Speed (LPF 10)", velocitySmoothed10);
-             telemetry.addData("Flywheel Speed (LPF 20)", velocitySmoothed20);
-             telemetry.addData("Flywheel Speed (LPF 30)", velocitySmoothed30);
-             telemetry.addData("Flywheel Drop RPM", rpmDrop.rpm);
-             telemetry.addData("Flywheel Drop Rate",
-                     rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp);
-             telemetry.addData("Flywheel Drop Timespan (ms)", rpmDrop.timestamp);
-             telemetry.addData("Flywheel Target RPM", targetRPM);
-             telemetry.addData("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS));
-             telemetry.addData("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS));
-
-         }
+         logTelemetry("Flywheel Speed (Raw RPM)", currentRpm, p);
+         logTelemetry("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm, p);
+         logTelemetry("Flywheel Speed (LPF 25)", lowPassFilter25.getOutput(), p);
+         logTelemetry("Flywheel Speed (LPF 50)", lowPassFilter50.getOutput(), p);
+         logTelemetry("Flywheel Speed (LPF 75)", lowPassFilter75.getOutput(), p);
+         logTelemetry("Flywheel Drop (RPM)", rpmDrop.rpm, p);
+         logTelemetry("Flywheel Drop (Rate)",
+                 rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp, p);
+         logTelemetry("Flywheel Drop Timespan (ms)", rpmDrop.timestamp, p);
+         logTelemetry("Flywheel Target RPM", targetRPM, p);
+         logTelemetry("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS), p);
+         logTelemetry("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS), p);
      }
 
      public boolean atTargetRpm() {
@@ -185,21 +172,16 @@ public class ShooterSubsystem {
      }
 
      public double calculateRPMs(double rangeInInches) {
-         if (rangeInInches > 90) {
-             return LONG_SHOT_RPM;
-         }
+         // TODO - Tune and test - revert if needed...
+         return (rangeInInches > FAR_RANGE) ?
+                 interpolate(rangeInInches, FAR_RANGE, FAR_RPM, LONG_SHOT_RANGE, LONG_SHOT_RPM) :
+                 interpolate(rangeInInches, CLOSE_RANGE, CLOSE_RPM, FAR_RANGE, FAR_RPM);
+     }
 
-         double rangeClose = CLOSE_RANGE;
-         double rangeFar = FAR_RANGE;
-         double rpmClose = CLOSE_RPM;
-         double rpmFar = FAR_RPM;
-
-         // y = mx + b
-         // b = y - mx
-         double slope = (rpmFar - rpmClose) / (rangeFar - rangeClose);
-         double intercept = rpmClose - slope * rangeClose;
-
-         return slope * rangeInInches + intercept;
+     private double interpolate(double x, double x1, double y1, double x2, double y2) {
+         double slope = (y2 - y1) / (x2 - x1); // slope = rise over run
+         double intercept = y1 - slope * x1; // b = y - mx
+         return slope * x + intercept; // Now interpolate: y = mx + b
      }
 
      public Action setRpmAction(double rpm) {
@@ -219,6 +201,14 @@ public class ShooterSubsystem {
              loop(telemetryPacket);
              return true;
          };
+     }
+
+     private void logTelemetry(String key, Object value, TelemetryPacket p) {
+         if (p != null) {
+             p.put(key, value);
+         } else {
+             telemetry.addData(key, value);
+         }
      }
 
 }

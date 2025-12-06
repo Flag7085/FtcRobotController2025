@@ -81,7 +81,7 @@ public class MeepMeepTesting {
         return bot
                 .getDrive()
                 //.actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
-                .actionBuilder(new Pose2d(-63, 41, Math.toRadians(180)))
+                .actionBuilder(new Pose2d(-50, 50, Math.toRadians(126.5)))
                 // Line up and shoot
                 //.lineToXSplineHeading(-30, Math.toRadians(135))
                 .setReversed(true)
@@ -138,6 +138,9 @@ public class MeepMeepTesting {
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
                // .lineToX()
                 // Go to the gate
+                .setReversed(true)
+                .lineToY(48)
+                .setTangent(Math.toRadians(0))
                 .splineToLinearHeading(new Pose2d(-4, 59, Math.toRadians(180)), Math.toRadians(90))
                 // Line up and shoot
                 .waitSeconds(2.0)
@@ -263,8 +266,9 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                //buildGoalSideAutoWithGate(myBot)
-                build12ArtifactCloseAuto(myBot)
+                buildGoalSideAutoWithGate(myBot)
+                //build12ArtifactCloseAuto(myBot)
+                //buildGoalSideAuto1(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)

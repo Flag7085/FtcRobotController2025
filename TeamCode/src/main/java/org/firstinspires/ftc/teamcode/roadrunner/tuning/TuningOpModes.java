@@ -58,7 +58,7 @@ public final class TuningOpModes {
     public static final String GROUP = "quickstart";
 
     // TODO - Change this to enable/disable tuning opmodes
-    public static final boolean DISABLED = true;
+    public static final boolean DISABLED = false;
 
     private TuningOpModes() {}
 

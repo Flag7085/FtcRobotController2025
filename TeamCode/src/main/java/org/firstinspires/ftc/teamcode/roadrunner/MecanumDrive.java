@@ -87,6 +87,9 @@ public final class MecanumDrive {
         public double lateralInPerTick = 0.0020470886562686825; //inPerTick;
         public double trackWidthTicks = 3454.24448595501;// 3060.0449951468254;
 
+        // 4-bar ticks/mm - 19.89436789 = 0.00197896 in/tick
+        // s-arm ticks/mm - 13.26291192 = 0.00296843 in/tick
+
         // feedforward parameters (in tick units)
         public double kS = 1.1296522458388907; // 0.4869942231906714;
         public double kV = 0.0005865736398253977;
@@ -120,31 +123,39 @@ public final class MecanumDrive {
         }
 
         public void setVersionTwoParams() {
-            inPerTick = 0.0;
-            lateralInPerTick = 0.0;
-            trackWidthTicks = 0.0;
+
+            // Second measurement = 0.00167896
+            // measured 90 / ( -2427.0 - -47889.0 ) = 90 / 45462.0 = 0.00187896
+            // Theoretical = 0.00197896
+            inPerTick = 0.00197896;
+
+            lateralInPerTick = 0.0012712630455884659; //0.001795041856787472;
+            trackWidthTicks = 5537.32850412435; //2963.24646545539; // = 5.865 inches
+            // 6799 -> 13.4 inches
+            // CAD estimate -> 11.2 inches
 
             // feedforward parameters (in tick units)
-            kS = 0.0;
-            kV = 0.0;
-            kA = 0.0;
+            kS = 1.0468806387921122; //0.8082357136507774;
+            kV = 0.0002750150086448; //0.00025920356193176325;// 0.0005920356193176325;
+            kA = 0.00012;
 
+            // These were measured values taken from DecodeTeleop driving...
             // path profile parameters (in inches)
-            maxWheelVel = 50;
-            minProfileAccel = -30;
-            maxProfileAccel = 50;
+            maxWheelVel = 0.8 * 70;      // +/- 70 -> 80% of that
+            minProfileAccel = 0.8 * -80; // ~150-200 but slowing is way too much
+            maxProfileAccel = 0.8 * 120; // +/- 200 -> 80% of that
 
             // turn profile parameters (in radians)
-            maxAngVel = Math.PI; // shared with path
-            maxAngAccel = Math.PI;
+            maxAngVel = Math.toRadians(0.8*225);//Math.PI; // shared with path ... +/- 225 deg -> 80%
+            maxAngAccel = Math.toRadians(0.8*2000);//Math.PI;
 
-            axialGain = 0.0;
-            lateralGain = 0.0;
-            headingGain = 0.0;
+            axialGain = 8.0;
+            lateralGain = 10.0;
+            headingGain = 10.0;
 
-            axialVelGain = 0.0;
-            lateralVelGain = 0.0;
-            headingVelGain = 0.0;
+            axialVelGain = 1.0;
+            lateralVelGain = 1.0;
+            headingVelGain = 0.5;
         }
     }
 

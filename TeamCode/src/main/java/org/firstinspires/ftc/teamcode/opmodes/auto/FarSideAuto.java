@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 @Config
 public class FarSideAuto extends DecodeAuto {
 
-    public static double SHOOTER_RPM_TARGET = 3990;
+    public static double SHOOTER_RPM_TARGET = 3775;
 
     TrajectoryActionBuilder start;
     TrajectoryActionBuilder pickUpBackRow;
@@ -44,9 +44,11 @@ public class FarSideAuto extends DecodeAuto {
     public void initialize() {
         // Line up for first shot
         start = drive.actionBuilder(beginPose, poseMap())
+                .waitSeconds(1.0)
                 .setReversed(false)
                 .setTangent(180)
-                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(160)), 0)
+                // adjusted from 160 deg... First shots too far left for some reason - adjusting...
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
                 .endTrajectory();
 
         // Pick up closest line of artifacts
@@ -56,7 +58,7 @@ public class FarSideAuto extends DecodeAuto {
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
-                .lineToY(52, (pose2dDual, posePath, v) -> 10)
+                .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up to shoot
                 .setReversed(true)
                 .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
@@ -70,11 +72,12 @@ public class FarSideAuto extends DecodeAuto {
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
                 .afterDisp(20.0, intake.stopIntakeAction()) // Right at the end of next lineToX
-                .lineToX(68, ((pose2dDual, posePath, v) -> 10))
+                .lineToX(68, ((pose2dDual, posePath, v) -> 15))
                 // Line up to shoot
                 .setReversed(true)
                 .setTangent(Math.toRadians(-100))
-                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(160)), Math.toRadians(-80))
+                // Adjusted from 160 deg... turning too far
+                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
                 .endTrajectory();
 
         // Move out of launch zone

@@ -7,6 +7,7 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
@@ -67,6 +68,15 @@ public abstract class DecodeAuto extends LinearOpMode {
     }
 
     protected Action shootingActionSequence() {
+        if (Constants.ROBOT_VERSION == RobotVersion.STATES) {
+            return new SequentialAction(
+                    intake.startIntakeAction(),
+                    feeder.shootOne(),
+                    feeder.shootOne(),
+                    feeder.shootOne(),
+                    intake.reveseIntakeAction()
+            );
+        }
         return new SequentialAction(
                 feeder.shootOne(),
                 intake.startIntakeAction(),

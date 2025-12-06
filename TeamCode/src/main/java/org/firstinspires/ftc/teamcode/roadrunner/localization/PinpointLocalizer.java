@@ -46,10 +46,10 @@ public final class PinpointLocalizer implements Localizer {
         }
 
         private void setToStatesConfig() {
-            xPodOffset = 0.0;
-            yPodOffset = 0.0;
+            xPodOffset = -3.7775; // between 3.443 and 4.112 - rear of center
+            yPodOffset = -3.8755; // between 3.556 and 4.195 - right of center
             odometryPodType = GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD;
-            xEncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+            xEncoderDirection = GoBildaPinpointDriver.EncoderDirection.REVERSED;
             yEncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD;
         }
     }

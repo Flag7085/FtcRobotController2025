@@ -122,6 +122,14 @@ public class FeederSubsystem {
                 return rpmChange < TRIGGER_RPM_THRESHOLD;
             }
 
+            private boolean shotStillInProgress(TelemetryPacket telemetryPacket) {
+                double currentRpm = shooterSubsystem.getRpm();
+                trackingWindow.addMeasurement(currentRpm);
+                double rpmChange = currentRpm - trackingWindow.oldestMeasurement();
+                telemetryPacket.put("Flywheel RPM Change", rpmChange);
+                return rpmChange < 0;
+            }
+
             boolean shotDetectedV2(TelemetryPacket telemetryPacket) {
                 RPMTracker.Point p = shooterSubsystem.getRpmTracker()
                         .computeCurrentPeakToTroughDrop();
@@ -152,6 +160,7 @@ public class FeederSubsystem {
                     triggerCountV2++;
                 }
 
+                // TODO - refactor?  stillInProgress vs. delay?  Smoothed RPM?
                 if (shotDetected && !delayStopwatch.isStarted()) {
                     triggerCount++;
                     delayStopwatch.start();
@@ -164,7 +173,8 @@ public class FeederSubsystem {
                 telemetryPacket.put("Triggered", triggerCount);
                 telemetryPacket.put("Triggered V2", triggerCountV2);
 
-                start();
+                //start();
+                latched_start();
                 return true;
             }
         };

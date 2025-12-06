@@ -93,7 +93,7 @@ public class DecodeTeleop extends OpMode {
     public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
     public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
 
-    public static double DRIVE_SPEED = 1.0;
+    public static double DRIVE_SPEED = 0.8;
     public static double TURN_SPEED = 0.6;
 
     // No IMU - We use Pinpoint, which is integrated with the MecanumDrive class.
@@ -113,6 +113,10 @@ public class DecodeTeleop extends OpMode {
 
     // For tracking loop time
     long previousTime = 0;
+
+    // For logging acceleration
+    double previousDriveVelocity = 0;
+    double previousTurnVelocity = 0;
 
     @Override
     public void init() {
@@ -134,7 +138,7 @@ public class DecodeTeleop extends OpMode {
         feederSubsystem = new FeederSubsystem(hardwareMap, telemetry, shooterSubsystem, intakeSubsystem);
 
         if (Constants.ROBOT_VERSION == RobotVersion.STATES) {
-            visionSubsystem = VisionSubsystem.createWithNoVision(hardwareMap, telemetry);
+            visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
         } else {
             visionSubsystem = VisionSubsystem.createUsingLimelight(hardwareMap, telemetry);
         }
@@ -161,7 +165,7 @@ public class DecodeTeleop extends OpMode {
 
     @Override
     public void loop() {
-        logLoopTime();
+        long loopTimeMs = logLoopTime();
         pidTuner();
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
@@ -190,10 +194,26 @@ public class DecodeTeleop extends OpMode {
                             currentPose.position.y,
                             newHeading));
         }
-        writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity);
+        writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity, loopTimeMs);
 
         // This also turns on an indicator light if it finds one...
         VisionSubsystem.GoalTag goalTag = visionSubsystem.findGoalTag();
+
+        // Compute range and target RPM early for prominent
+        double targetRPMs = SHOOTER_SPEED_RPM;
+        if (goalTag != null) {
+            double range = goalTag.getRangeInches();
+            telemetry.addData("GoalTag Range", range);
+            if (!USE_FIXED_SHOOTER_RPM) {
+                targetRPMs = shooterSubsystem.calculateRPMs(range);
+            }
+        } else {
+            telemetry.addData("GoalTag Range", -1.0);
+        }
+
+        shooterSubsystem.setRPM(targetRPMs);
+        shooterSubsystem.loop();  // This updates PID/power, ALWAYS need to call shooterSubsystem.loop()
+
 
         double driveSpeed, strafe, turn;
 
@@ -223,18 +243,6 @@ public class DecodeTeleop extends OpMode {
             autoTurnController.calculate(0, 0);
         }
 
-        // Basic shooting logic
-        double targetRPMs = SHOOTER_SPEED_RPM;
-        if (goalTag != null) {
-            double range = goalTag.getRangeInches();
-            telemetry.addData("Range (RPM)", range);
-            if (!USE_FIXED_SHOOTER_RPM) {
-                targetRPMs = shooterSubsystem.calculateRPMs(range);
-            }
-        }
-        shooterSubsystem.setRPM(targetRPMs);
-        shooterSubsystem.loop();  // This updates PID/power, ALWAYS need to call shooterSubsystem.loop()
-
         if (gamepad2.cross) {
             feederSubsystem.start();
         } else if (gamepad2.triangle) {
@@ -255,12 +263,14 @@ public class DecodeTeleop extends OpMode {
         driveFieldRelative(driveSpeed, strafe, turn);
     }
 
-    private void logLoopTime() {
+    private long logLoopTime() {
         long currentTime = System.currentTimeMillis();
+        long loopTime = currentTime - previousTime;
         if (previousTime > 0) {
-            telemetry.addData("Latency (ms)", currentTime - previousTime);
+            telemetry.addData("Latency (ms)", loopTime);
         }
         previousTime = currentTime;
+        return loopTime;
     }
 
     private void pidTuner() {
@@ -284,7 +294,7 @@ public class DecodeTeleop extends OpMode {
 //        telemetry.addData("Flywheel D", Tuning.FLYWHEEL_D);
     }
 
-    private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity) {
+    private void writeRobotPoseTelemetry(Pose2d pose, PoseVelocity2d velocity, long loopTime) {
         telemetry.addLine(
                 String.format(
                     "Robot pose: (%2.1fin, %2.1fin, %3.1fdeg)",
@@ -301,6 +311,16 @@ public class DecodeTeleop extends OpMode {
                         Math.toDegrees(velocity.angVel)
                 )
         );
+        double currentDriveVelocity = Math.hypot(velocity.linearVel.x, velocity.linearVel.y);
+        double driveAccel = (currentDriveVelocity - previousDriveVelocity) / (loopTime / 1000.0);
+        double currentTurnVelocity = Math.toDegrees(velocity.angVel);
+        double turnAccel = (currentTurnVelocity - previousTurnVelocity) / (loopTime / 1000.0);
+        previousDriveVelocity = currentDriveVelocity;
+        previousTurnVelocity = currentTurnVelocity;
+        telemetry.addData("Drive Velocity", currentDriveVelocity);
+        telemetry.addData("Drive Accel", driveAccel);
+        telemetry.addData("Turn Velocity", currentTurnVelocity);
+        telemetry.addData("Turn Accel", turnAccel);
     }
 
     // This routine drives the robot field relative
