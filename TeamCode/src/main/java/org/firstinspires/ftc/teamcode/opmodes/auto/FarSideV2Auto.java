@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 
 @Config
-public class FarSideAuto extends DecodeAuto {
+public class FarSideV2Auto extends DecodeAuto {
 
     public static double SHOOTER_RPM_TARGET = 3775;
 
@@ -21,21 +21,22 @@ public class FarSideAuto extends DecodeAuto {
     TrajectoryActionBuilder pickUpBackRow;
     TrajectoryActionBuilder pickUpLoadingZone;
     TrajectoryActionBuilder parkOutsideLaunchZone;
+    TrajectoryActionBuilder pickUpLoadingZoneAfterGate;
 
-    protected FarSideAuto(Alliance alliance) {
+    protected FarSideV2Auto(Alliance alliance) {
         super(alliance, new Pose2d(62, 18, Math.toRadians(180)));
     }
 
-    @Autonomous(name = "Far, Red - Shoot 9")
-    public static class FarSideAutoRedAlliance extends FarSideAuto {
-        public FarSideAutoRedAlliance() {
+    @Autonomous(name = "Far V2, Red - Shoot 9")
+    public static class FarSideV2AutoRedAlliance extends FarSideV2Auto {
+        public FarSideV2AutoRedAlliance() {
             super(Alliance.RED);
         }
     }
 
-    @Autonomous(name = "Far, Blue - Shoot 9")
-    public static class FarSideAutoBlueAlliance extends FarSideAuto {
-        public FarSideAutoBlueAlliance() {
+    @Autonomous(name = "Far V2, Blue - Shoot 9")
+    public static class FarSideV2AutoBlueAlliance extends FarSideV2Auto {
+        public FarSideV2AutoBlueAlliance() {
             super(Alliance.BLUE);
         }
     }
@@ -67,12 +68,27 @@ public class FarSideAuto extends DecodeAuto {
         // Pick up artifacts from loading zone
         pickUpLoadingZone = pickUpBackRow.fresh()
                 .setReversed(false)
-                .splineTo(new Vector2d(48, 61), Math.toRadians(60))
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(50, 61, Math.toRadians(60)), Math.toRadians(90))
                 .setTangent(0)
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
                 .afterDisp(20.0, intake.stopIntakeAction()) // Right at the end of next lineToX
                 .lineToX(68, ((pose2dDual, posePath, v) -> 15))
+                // Line up to shoot
+                .setReversed(true)
+                .setTangent(Math.toRadians(-100))
+                // Adjusted from 160 deg... turning too far
+                .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
+                .endTrajectory();
+
+        pickUpLoadingZoneAfterGate = pickUpBackRow.fresh()
+                .setReversed(false)
+                .turnTo(Math.toRadians(90))
+                .splineToConstantHeading(new Vector2d(66, 30), Math.toRadians(90))
+                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
+                .afterDisp(32.0, intake.stopIntakeAction()) // Right at the end of next lineToX
+                .splineToConstantHeading(new Vector2d(66, 61), Math.toRadians(90), ((pose2dDual, posePath, v) -> 15))
                 // Line up to shoot
                 .setReversed(true)
                 .setTangent(Math.toRadians(-100))
@@ -100,9 +116,11 @@ public class FarSideAuto extends DecodeAuto {
                         new SleepAction(0.5),
                         start.build(),
                         shootingActionSequence(true),
+                        pickUpLoadingZone.build(),
+                        shootingActionSequence(true),
                         pickUpBackRow.build(),
                         shootingActionSequence(true),
-                        pickUpLoadingZone.build(),
+                        pickUpLoadingZoneAfterGate.build(),
                         shootingActionSequence(true),
                         parkOutsideLaunchZone.build()
                 )

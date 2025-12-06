@@ -168,7 +168,7 @@ public class FeederSubsystem {
                 if (shotDetected && !delayStopwatch.isStarted()) {
                     triggerCount++;
                     delayStopwatch.start();
-                } else if ((runtimeStopwatch.checkTimeMs() >= 3000) || (
+                } else if ((runtimeStopwatch.checkTimeMs() >= 1500) || (
                                 delayStopwatch.isStarted() &&
                                 delayStopwatch.checkTimeMs() >= TRIGGER_DELAY_TIME_MS)) {
                     stop();

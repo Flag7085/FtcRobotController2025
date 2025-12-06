@@ -76,8 +76,8 @@ public abstract class DecodeAuto extends LinearOpMode {
             return new SequentialAction(
                     intake.startIntakeAction(),
                     feeder.shootOne(),
-                    feeder.shootOne(),
-                    feeder.shootOne(),
+                    feeder.shootOne(justShoot),
+                    feeder.shootOne(justShoot),
                     intake.reveseIntakeAction()
             );
         }
