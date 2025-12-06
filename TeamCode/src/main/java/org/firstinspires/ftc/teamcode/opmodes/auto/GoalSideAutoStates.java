@@ -45,7 +45,7 @@ public class GoalSideAutoStates extends DecodeAuto {
         start = drive.actionBuilder(beginPose, poseMap())
                 //.waitSeconds(10)
                 .setReversed(true)
-                .splineTo(new Vector2d(-25, 25), Math.toRadians(-45))
+                .splineToLinearHeading(new Pose2d(-25, 25, Math.toRadians(135)),Math.toRadians(-45))
                 .endTrajectory();
 
         // Go pick up first line of Artifacts and return to shoot
@@ -64,7 +64,7 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .lineToY(48)
                 .setTangent(Math.toRadians(0))
                 .splineToSplineHeading(new Pose2d(-4, 58, Math.toRadians(180)), Math.toRadians(90))
-                .waitSeconds(1.5)
+                .waitSeconds(0.5)
 
                 // Line up and shoot
                 .setReversed(true)
@@ -83,12 +83,18 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up and shoot
                 .setReversed(true)
+                .setTangent(Math.toRadians(225))
                 .splineToLinearHeading(new Pose2d(-25, 25, Math.toRadians(135)),  Math.toRadians(180))
                 .endTrajectory();
 
         pickUpThirdRow = pickUpSecondRow.fresh()
                 .setReversed(true)
                 .splineToSplineHeading(new Pose2d (36, 18, Math.toRadians(90)), Math.toRadians(0))
+//                .setTangent(Math.toRadians(0))
+//                .splineToLinearHeading(new Pose2d(-12, 25, Math.toRadians(0)), Math.toRadians(0))
+//                .lineToX(28)
+//                .splineTo(new Vector2d(36, 36), Math.toRadians(90))
+
                 .setReversed(false)
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
@@ -96,14 +102,16 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up and shoot
                 .setReversed(true)
-                .splineToLinearHeading(new Pose2d(-25, 25, Math.toRadians(135)),  Math.toRadians(180))
+                .setTangent(Math.toRadians(210))
+                .splineToLinearHeading(new Pose2d(-39, 19, Math.toRadians(125)), Math.toRadians(180))
                 .endTrajectory();
 
+        
         parkOutsideLaunchZone = pickUpThirdRow.fresh()
                 // Go park to the side near goal
-                .setReversed(false)
-                .setTangent(Math.toRadians(60))
-                .splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
+//                .setReversed(false)
+//                .setTangent(Math.toRadians(60))
+//                .splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
                 .endTrajectory();
     }
 
@@ -124,8 +132,8 @@ public class GoalSideAutoStates extends DecodeAuto {
                     pickUpSecondRow.build(),
                     shootingActionSequence(),
                     pickUpThirdRow.build(),
-                    shootingActionSequence(),
-                    parkOutsideLaunchZone.build()
+                    shootingActionSequence()
+                   // parkOutsideLaunchZone.build()
                 )
             )
         );
