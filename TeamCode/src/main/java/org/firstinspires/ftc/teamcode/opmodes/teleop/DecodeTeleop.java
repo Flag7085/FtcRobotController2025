@@ -39,20 +39,14 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.RobotVersion;
 import org.firstinspires.ftc.teamcode.Tuning;
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
 import org.firstinspires.ftc.teamcode.roadrunner.MecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystem.ArtifactSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.FeederSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystem.ShooterSubsystem;
@@ -84,17 +78,13 @@ public class DecodeTeleop extends OpMode {
     public static double SHOOTER_SPEED_RPM = 3000;
     public static boolean USE_FIXED_SHOOTER_RPM = false;
 
-    //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
-    //  applied to the drive motors to correct the error.
-    //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    // public static double SPEED_GAIN  =  0.02  ;   //  Forward Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    // public static double STRAFE_GAIN =  0.015 ;   //  Strafe Speed Control "Gain".  e.g. Ramp up to 37% power at a 25 degree Yaw error.   (0.375 / 25.0)
-    public static double TURN_GAIN   =  0.02  ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-    public static double MAX_AUTO_TURN  = 0.3;   //  Clip the turn speed to this max value (adjust for your robot)
-    public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
-
     public static double DRIVE_SPEED = 0.8;
+    public static double DRIVE_SLOW_SPEED = 0.2;
     public static double TURN_SPEED = 0.6;
+
+    // For auto-turn
+    //public static double MAX_AUTO_TURN  = 1.0;   //  Clip the turn speed to this max value (adjust for your robot)
+    public static double BEARING_THRESHOLD = 0.25; // Angled towards the tag (degrees)
 
     // No IMU - We use Pinpoint, which is integrated with the MecanumDrive class.
     // This declares the IMU needed to get the current direction the robot is facing
@@ -108,11 +98,15 @@ public class DecodeTeleop extends OpMode {
     IntakeSubsystem intakeSubsystem;
     VisionSubsystem visionSubsystem;
     PIDController autoTurnController;
+    ArtifactSubsystem artifactSubsystem;
 
     Alliance alliance = null;
 
     // For tracking loop time
     long previousTime = 0;
+    long startTime = 0;
+    boolean endGameWarning = false;
+    boolean parkWarning = false;
 
     // For logging acceleration
     double previousDriveVelocity = 0;
@@ -149,6 +143,8 @@ public class DecodeTeleop extends OpMode {
             visionSubsystem.setGoalTagIds(alliance.getGoalAprilTagId());
         }
 
+        artifactSubsystem = new ArtifactSubsystem(hardwareMap);
+
         drive = new MecanumDrive(hardwareMap, startingPose);
 
         // Wait for the DS start button to be touched.
@@ -161,12 +157,27 @@ public class DecodeTeleop extends OpMode {
     @Override
     public void start() {
         visionSubsystem.start();
+        startTime = System.currentTimeMillis();
     }
 
     @Override
     public void loop() {
-        long loopTimeMs = logLoopTime();
+        long currentTime = System.currentTimeMillis();
+        long loopTimeMs = logLoopTime(currentTime);
         pidTuner();
+
+        // Driver end game warnings
+        if (currentTime - startTime > 110_000 && !parkWarning) {
+            // 10 seconds left!!!
+            gamepad1.rumble(2_000);
+            gamepad2.rumble(2_000);
+            parkWarning = true;
+        } else if (currentTime - startTime > 90_000 && !endGameWarning) {
+            // 30 seconds left!!!
+            gamepad1.rumbleBlips(5); // About 3 per second
+            gamepad2.rumbleBlips(5); // About 3 per second
+            endGameWarning = true;
+        }
 
         PoseVelocity2d robotVelocity = drive.updatePoseEstimate();
         telemetry.addLine("Press \"share\" to reset Yaw");
@@ -192,7 +203,7 @@ public class DecodeTeleop extends OpMode {
                     new Pose2d(
                             currentPose.position.x,
                             currentPose.position.y,
-                            newHeading));
+                            Math.toRadians(newHeading)));
         }
         writeRobotPoseTelemetry(drive.localizer.getPose(), robotVelocity, loopTimeMs);
 
@@ -217,29 +228,48 @@ public class DecodeTeleop extends OpMode {
 
         double driveSpeed, strafe, turn;
 
-        double driveMultiplier = gamepad1.left_stick_button ? 1.0 : DRIVE_SPEED;
+        double driveMultiplier = gamepad1.right_trigger > 0.5 ? DRIVE_SLOW_SPEED : DRIVE_SPEED;
         driveSpeed = -gamepad1.left_stick_y * driveMultiplier;
         strafe = gamepad1.left_stick_x  * driveMultiplier;
 
+        // Note - at this point, turn is aligned with the joystick, so:
+        //   Positive --> is turn right, Negative <-- is turn left
+        // This is opposite of our heading measurements (Positive is CCW <--), so for feedback
+        //   control we need to negate either the input/setpoint or output.
         if (gamepad1.triangle) {
-            double heading = drive.localizer.getPose().heading.toDouble();
+            // Roadrunner headings operate in units of Radians.  We need degrees.
+            double heading = Math.toDegrees(drive.localizer.getPose().heading.toDouble());
             double target = alliance == null ? 0.0 : alliance.getHeadingOffset();
-            turn = autoTurnController.calculate(heading, target);
-            telemetry.addData("AutoAim", "Base Alignment: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+
+            // See above - inverted because headings are CCW positive while turn here matches
+            // the joystick and is CW positive...
+            double error = (target - heading);
+            turn = autoTurnController.calculate(error, 0);
+            // turn = MathUtils.clamp(turn, -MAX_AUTO_TURN, MAX_AUTO_TURN); // Do we need to limit it?
+            if (Math.abs(error) < BEARING_THRESHOLD) {
+                turn = 0;
+                //telemetry.addData("AutoAimAligned", "Auto: Robot aligned with Base!");
+            } //else {
+                //telemetry.addData("AutoAimAligned", "Auto: Robot not aligned with Base!");
+            //}
+            telemetry.addData("Auto-base Heading", heading);
+            telemetry.addData("Auto-base Target", target);
+            telemetry.addData("Auto-base turn", turn);
+            //telemetry.addData("AutoAim", "Base Alignment: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else if (gamepad1.circle && goalTag != null){
             double headingError = -goalTag.getHeadingOffsetDegrees();
             turn = autoTurnController.calculate(headingError, 0);
             if (Math.abs(headingError) < BEARING_THRESHOLD) {
                 turn = 0;
-                telemetry.addData("AutoAimAligned", "Auto: Robot aligned with AprilTag!");
+                //telemetry.addData("AutoAimAligned", "Auto: Robot aligned with AprilTag!");
             } else {
-                telemetry.addData("AutoAimAligned", "Auto: Robot not aligned with AprilTag!");
+                //telemetry.addData("AutoAimAligned", "Auto: Robot not aligned with AprilTag!");
             }
-            telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            //telemetry.addData("AutoAim", "Auto: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
         } else {
             turn   = gamepad1.right_stick_x * TURN_SPEED;
-            telemetry.addData("AutoAimAligned", "Manual: not checked");
-            telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
+            //telemetry.addData("AutoAimAligned", "Manual: not checked");
+            //telemetry.addData("AutoAim", "Manual: Drive %5.2f, Strafe %5.2f, Turn %5.2f ", driveSpeed, strafe, turn);
             autoTurnController.calculate(0, 0);
         }
 
@@ -248,23 +278,27 @@ public class DecodeTeleop extends OpMode {
         } else if (gamepad2.triangle) {
             feederSubsystem.latched_start();
         } else {
-            feederSubsystem.stop();
             // Feeder control from the manipulator overrides intake behavior
             // If those buttons are not pressed, then the driver gets control
             if (gamepad1.left_trigger > 0.5) {
                 intakeSubsystem.start();
+                feederSubsystem.reverse(true); // Reverse slowly to prevent artifacts from pushing up into the feeder space
             } else if (gamepad1.square) {
                 intakeSubsystem.reverse();
+                feederSubsystem.reverse(false); // Reverse at normal speed
             } else {
                 intakeSubsystem.stop();
+                feederSubsystem.stop();
             }
         }
+
+        artifactSubsystem.checkForArtifacts(telemetry);
 
         driveFieldRelative(driveSpeed, strafe, turn);
     }
 
-    private long logLoopTime() {
-        long currentTime = System.currentTimeMillis();
+    private long logLoopTime(long currentTime) {
+
         long loopTime = currentTime - previousTime;
         if (previousTime > 0) {
             telemetry.addData("Latency (ms)", loopTime);
@@ -331,11 +365,12 @@ public class DecodeTeleop extends OpMode {
 
         // If we have an alliance selected, then rotate from standard field orientation
         // into the perspective from that alliance's drive station.
-        double headingOffset = alliance == null ? 0 : alliance.getHeadingOffset();
+        double headingOffsetDegrees = alliance == null ? 0 : alliance.getHeadingOffset();
 
         // Second, rotate angle by the angle the robot is pointing
-        theta = AngleUnit.normalizeRadians(
-                theta - drive.localizer.getPose().heading.toDouble() + headingOffset);
+        theta = AngleUnit.normalizeRadians(theta -
+                drive.localizer.getPose().heading.toDouble() +
+                Math.toRadians(headingOffsetDegrees));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);

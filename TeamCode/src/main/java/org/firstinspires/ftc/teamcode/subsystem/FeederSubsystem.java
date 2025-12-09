@@ -17,17 +17,11 @@ import org.firstinspires.ftc.teamcode.util.RPMTracker;
 import org.firstinspires.ftc.teamcode.util.Stopwatch;
 import org.firstinspires.ftc.teamcode.util.TrackingWindow;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Timer;
-
 @Config
 public class FeederSubsystem {
     public static double FEEDER_SPEED =
             Constants.ROBOT_VERSION == RobotVersion.QUALIFIERS ? 0.8 : 0.7;
+    public static double FEEDER_SLOW_REVERSE_SPEED = -0.12;
     public static DcMotorSimple.Direction FEEDER_DIRECTION = DcMotorSimple.Direction.FORWARD;
 
     public static double TRIGGER_DELAY_TIME_MS = 250;
@@ -99,7 +93,14 @@ public class FeederSubsystem {
     }
 
     public void stop() {
-        feederWheel.setPower(0);
+        feederWheel.setPower(0.0);
+        triggerLatch = false;
+    }
+
+    // This may be used during intake to prevent artifacts from being pushed up into the feeder
+    // This is important to a) prevent a 4th artifact and b) keep alignment with proximity sensors
+    public void reverse(boolean slow) {
+        feederWheel.setPower(slow ? FEEDER_SLOW_REVERSE_SPEED : -FEEDER_SPEED);
         triggerLatch = false;
     }
 

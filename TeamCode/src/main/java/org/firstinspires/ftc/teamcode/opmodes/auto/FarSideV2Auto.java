@@ -55,7 +55,10 @@ public class FarSideV2Auto extends DecodeAuto {
         // Pick up closest line of artifacts
         pickUpBackRow = start.fresh()
                 .setReversed(false)
-                .splineTo(new Vector2d(36, 24), Math.toRadians(90))
+                //.splineTo(new Vector2d(36, 24), Math.toRadians(90))
+                .setTangent(Math.toRadians(180))
+                .splineToSplineHeading(new Pose2d(36, 24, Math.toRadians(90)), Math.toRadians(90))
+
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end

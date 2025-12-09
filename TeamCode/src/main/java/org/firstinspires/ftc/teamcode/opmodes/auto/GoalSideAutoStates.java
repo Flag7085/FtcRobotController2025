@@ -102,7 +102,7 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
 
                 // Line up and shoot
-                .turnTo(Math.toRadians(125))
+                //.turnTo(Math.toRadians(125))
                 .setReversed(true)
                 .setTangent(Math.toRadians(210))
                 .splineToLinearHeading(new Pose2d(-39, 19, Math.toRadians(120)), Math.toRadians(210))
