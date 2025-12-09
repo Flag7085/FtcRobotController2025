@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.auto;
+package org.firstinspires.ftc.teamcode.opmodes.auto.archived;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -9,10 +9,12 @@ import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
+import org.firstinspires.ftc.teamcode.opmodes.auto.DecodeAuto;
 
-@Config
+//@Config
 public class FarSideAuto extends DecodeAuto {
 
     public static double SHOOTER_RPM_TARGET = 3775;
@@ -27,6 +29,7 @@ public class FarSideAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Far, Red - Shoot 9")
+    @Disabled
     public static class FarSideAutoRedAlliance extends FarSideAuto {
         public FarSideAutoRedAlliance() {
             super(Alliance.RED);
@@ -34,6 +37,7 @@ public class FarSideAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Far, Blue - Shoot 9")
+    @Disabled
     public static class FarSideAutoBlueAlliance extends FarSideAuto {
         public FarSideAutoBlueAlliance() {
             super(Alliance.BLUE);

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.auto;
+package org.firstinspires.ftc.teamcode.opmodes.auto.archived;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -8,10 +8,12 @@ import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
+import org.firstinspires.ftc.teamcode.opmodes.auto.DecodeAuto;
 
-@Config
+//@Config
 public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
     public static double SHOOTER_RPM_TARGET = 2800;
 
@@ -26,6 +28,7 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Close, Red - Shoot 12")
+    @Disabled
     public static class ShootTwelveArtifactCloseAutoRedAlliance extends ShootTwelveArtifactCloseAuto {
         public ShootTwelveArtifactCloseAutoRedAlliance() {
             super(Alliance.RED);
@@ -33,6 +36,7 @@ public class ShootTwelveArtifactCloseAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Close, Blue - Shoot 12")
+    @Disabled
     public static class ShootTwelveArtifactCloseAutoBlueAlliance extends ShootTwelveArtifactCloseAuto {
         public ShootTwelveArtifactCloseAutoBlueAlliance() {
             super(Alliance.BLUE);
