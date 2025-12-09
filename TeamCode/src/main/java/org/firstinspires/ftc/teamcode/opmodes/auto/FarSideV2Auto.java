@@ -27,14 +27,14 @@ public class FarSideV2Auto extends DecodeAuto {
         super(alliance, new Pose2d(62, 18, Math.toRadians(180)));
     }
 
-    @Autonomous(name = "Far V2, Red - Shoot 9")
+    @Autonomous(name = "Far, Red - Shoot 9+", group = "Red")
     public static class FarSideV2AutoRedAlliance extends FarSideV2Auto {
         public FarSideV2AutoRedAlliance() {
             super(Alliance.RED);
         }
     }
 
-    @Autonomous(name = "Far V2, Blue - Shoot 9")
+    @Autonomous(name = "Far, Blue - Shoot 9+", group = "Blue")
     public static class FarSideV2AutoBlueAlliance extends FarSideV2Auto {
         public FarSideV2AutoBlueAlliance() {
             super(Alliance.BLUE);

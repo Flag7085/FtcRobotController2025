@@ -25,14 +25,14 @@ public class GoalSideAutoStates extends DecodeAuto {
         super(alliance, new Pose2d(-50, 50, Math.toRadians(126.5)));
     }
 
-    @Autonomous(name = "Goal, Red - Shoot 9 - States")
+    @Autonomous(name = "Goal, Red - Shoot 12 + Gate", group = "Red")
     public static class GoalSideAutoRedAlliance extends GoalSideAutoStates {
         public GoalSideAutoRedAlliance() {
             super(Alliance.RED);
         }
     }
 
-    @Autonomous(name = "Goal, Blue - Shoot 9 - States")
+    @Autonomous(name = "Goal, Blue - Shoot 12 + Gate", group = "Blue")
     public static class GoalSideAutoBlueAlliance extends GoalSideAutoStates {
         public GoalSideAutoBlueAlliance() {
             super(Alliance.BLUE);
@@ -100,6 +100,7 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
+
                 // Line up and shoot
                 .turnTo(Math.toRadians(125))
                 .setReversed(true)
