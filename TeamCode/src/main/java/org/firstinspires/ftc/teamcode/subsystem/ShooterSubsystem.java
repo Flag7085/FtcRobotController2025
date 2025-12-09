@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.util.RPMTracker;
 
 @Config
 public class ShooterSubsystem {
+    public static boolean LOG_DETAILED_TELEMETRY = false;
     public static DcMotorSimple.Direction SHOOTER_DIRECTION =
             Constants.ROBOT_VERSION == RobotVersion.QUALIFIERS ?
                     DcMotorSimple.Direction.FORWARD :
@@ -145,18 +146,18 @@ public class ShooterSubsystem {
          double currentSmoothedRpm = rpmTracker.currentSmoothedRpm().rpm;
          RPMTracker.Point rpmDrop = rpmTracker.computeCurrentPeakToTroughDrop();
 
-         logTelemetry("Flywheel Speed (Raw RPM)", currentRpm, p);
-         logTelemetry("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm, p);
-         logTelemetry("Flywheel Speed (LPF 25)", lowPassFilter25.getOutput(), p);
-         logTelemetry("Flywheel Speed (LPF 50)", lowPassFilter50.getOutput(), p);
-         logTelemetry("Flywheel Speed (LPF 75)", lowPassFilter75.getOutput(), p);
-         logTelemetry("Flywheel Drop (RPM)", rpmDrop.rpm, p);
+         logTelemetry("Flywheel Speed (Raw RPM)", currentRpm, p, false);
+         logTelemetry("Flywheel Speed (Smoothed RPM)", currentSmoothedRpm, p, true);
+         logTelemetry("Flywheel Speed (LPF 25)", lowPassFilter25.getOutput(), p, true);
+         logTelemetry("Flywheel Speed (LPF 50)", lowPassFilter50.getOutput(), p, true);
+         logTelemetry("Flywheel Speed (LPF 75)", lowPassFilter75.getOutput(), p, true);
+         logTelemetry("Flywheel Drop (RPM)", rpmDrop.rpm, p, true);
          logTelemetry("Flywheel Drop (Rate)",
-                 rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp, p);
-         logTelemetry("Flywheel Drop Timespan (ms)", rpmDrop.timestamp, p);
-         logTelemetry("Flywheel Target RPM", targetRPM, p);
-         logTelemetry("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS), p);
-         logTelemetry("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS), p);
+                 rpmDrop.timestamp <= 0 ? 0 : 1000 * rpmDrop.rpm / rpmDrop.timestamp, p, true);
+         logTelemetry("Flywheel Drop Timespan (ms)", rpmDrop.timestamp, p, true);
+         logTelemetry("Flywheel Target RPM", targetRPM, p, false);
+         logTelemetry("Flywheel 1 current", shooterWheel.getCurrent(CurrentUnit.MILLIAMPS), p, true);
+         logTelemetry("Flywheel 2 current", shooterWheel2.getCurrent(CurrentUnit.MILLIAMPS), p, true);
      }
 
      public boolean atTargetRpm() {
@@ -203,11 +204,13 @@ public class ShooterSubsystem {
          };
      }
 
-     private void logTelemetry(String key, Object value, TelemetryPacket p) {
-         if (p != null) {
-             p.put(key, value);
-         } else {
-             telemetry.addData(key, value);
+     private void logTelemetry(String key, Object value, TelemetryPacket p, boolean isDetailed) {
+         if (LOG_DETAILED_TELEMETRY || !isDetailed) {
+             if (p != null) {
+                 p.put(key, value);
+             } else {
+                 telemetry.addData(key, value);
+             }
          }
      }
 
