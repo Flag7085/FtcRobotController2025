@@ -77,6 +77,18 @@ public class MeepMeepTesting {
                 .build();
     }
 
+    public static Action khloeTest(RoadRunnerBotEntity bot) {
+        // TO: KHLOE WILL ALWAYS COME BACK. CODE WILL BE WRITTEN HERE. RUN WHILE U STILL CAN.
+        return bot
+                .getDrive()
+                .actionBuilder(new Pose2d(0, 0, 0))
+
+                .turn(Math.toRadians(360))
+                // TO DO: using the bot methods documented in our demo Action,
+                // develop your new test route here
+                .build();
+    }
+
     public static Action buildGoalSideAuto1(RoadRunnerBotEntity bot) {
         return bot
                 .getDrive()
