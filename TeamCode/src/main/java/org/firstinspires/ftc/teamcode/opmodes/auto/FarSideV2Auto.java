@@ -60,8 +60,8 @@ public class FarSideV2Auto extends DecodeAuto {
                 .splineToSplineHeading(new Pose2d(36, 24, Math.toRadians(90)), Math.toRadians(90))
 
                 // Intake
-                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
-                .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
+                .afterDisp(0.0, runIntake()) // Right at the beginning
+                .afterDisp(28.0, stopIntake()) // Right at the end
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up to shoot
                 .setReversed(true)
@@ -75,8 +75,8 @@ public class FarSideV2Auto extends DecodeAuto {
                 .splineToLinearHeading(new Pose2d(50, 61, Math.toRadians(60)), Math.toRadians(90))
                 .setTangent(0)
                 // Intake
-                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
-                .afterDisp(20.0, intake.stopIntakeAction()) // Right at the end of next lineToX
+                .afterDisp(0.0, runIntake()) // Right at the beginning of next lineToX
+                .afterDisp(20.0, stopIntake()) // Right at the end of next lineToX
                 .lineToX(68, ((pose2dDual, posePath, v) -> 15))
                 // Line up to shoot
                 .setReversed(true)
@@ -87,11 +87,11 @@ public class FarSideV2Auto extends DecodeAuto {
 
         pickUpLoadingZoneAfterGate = pickUpBackRow.fresh()
                 .setReversed(false)
-                .turnTo(Math.toRadians(90))
-                .splineToConstantHeading(new Vector2d(66, 30), Math.toRadians(90))
-                .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning of next lineToX
-                .afterDisp(32.0, intake.stopIntakeAction()) // Right at the end of next lineToX
-                .splineToConstantHeading(new Vector2d(66, 61), Math.toRadians(90), ((pose2dDual, posePath, v) -> 15))
+                .turnTo(Math.toRadians(70))
+                .splineToConstantHeading(new Vector2d(63, 30), Math.toRadians(70))
+                .afterDisp(0.0, runIntake()) // Right at the beginning of next lineToX
+                .afterDisp(32.0, stopIntake()) // Right at the end of next lineToX
+                .splineToSplineHeading(new Pose2d(63, 61, Math.toRadians(90)), Math.toRadians(90), ((pose2dDual, posePath, v) -> 15))
                 // Line up to shoot
                 .setReversed(true)
                 .setTangent(Math.toRadians(-100))

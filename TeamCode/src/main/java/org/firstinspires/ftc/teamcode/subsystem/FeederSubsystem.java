@@ -104,6 +104,20 @@ public class FeederSubsystem {
         triggerLatch = false;
     }
 
+    public Action reverseAction() {
+        return telemetryPacket -> {
+            reverse(true);
+            return false;
+        };
+    }
+
+    public Action stopAction() {
+        return telemetryPacket -> {
+            stop();
+            return false;
+        };
+    }
+
     public Action shootOne() {
         return shootOne(false);
     }
