@@ -18,9 +18,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  */
 @Config
 public class ArtifactSubsystem {
-    public static double DEFAULT_PROXIMITY_THRESHOLD = 0.5;
-    public static double PROXIMITY_ONE_THRESHOLD = DEFAULT_PROXIMITY_THRESHOLD;
-    public static double PROXIMITY_FULL_THRESHOLD = DEFAULT_PROXIMITY_THRESHOLD;
+    //public static double DEFAULT_PROXIMITY_THRESHOLD = 50;
+    public static double PROXIMITY_ONE_THRESHOLD = 100;
+    public static double PROXIMITY_FULL_THRESHOLD = 50;
 
     // Actually a NormalizedColorSensor.
     // Rev ColorSensorV3 objects also implement the DistanceSensor interface, which
@@ -31,7 +31,7 @@ public class ArtifactSubsystem {
 
     private long lastUpdatedMillis = 0;
 
-    public void init (HardwareMap hwMap) {
+    public ArtifactSubsystem (HardwareMap hwMap) {
         // proximity one monitors just under the feeder wheel and indicates whether at least
         // one artifact is present.
 
@@ -70,7 +70,9 @@ public class ArtifactSubsystem {
         boolean atLeastOneArtifact = checkProximityOne(telemetry);
         boolean robotIsFull = checkProximityFull(telemetry);
 
-        if (robotIsFull) {
+        // Require BOTH to be considered full - hopefully we'll avoid some of the noise
+        // that is expected to happen while loading artifacts...
+        if (atLeastOneArtifact && robotIsFull) {
             telemetry.addData("Artifact Count", 3);
             indicatorLight.setColor(GobildaIndicatorLight.Color.GREEN);
         } else if (atLeastOneArtifact) {

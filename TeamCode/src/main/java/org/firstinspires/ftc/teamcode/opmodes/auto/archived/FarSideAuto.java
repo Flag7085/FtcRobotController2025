@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.auto;
+package org.firstinspires.ftc.teamcode.opmodes.auto.archived;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -9,10 +9,12 @@ import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
+import org.firstinspires.ftc.teamcode.opmodes.auto.DecodeAuto;
 
-@Config
+//@Config
 public class FarSideAuto extends DecodeAuto {
 
     public static double SHOOTER_RPM_TARGET = 3775;
@@ -27,6 +29,7 @@ public class FarSideAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Far, Red - Shoot 9")
+    @Disabled
     public static class FarSideAutoRedAlliance extends FarSideAuto {
         public FarSideAutoRedAlliance() {
             super(Alliance.RED);
@@ -34,6 +37,7 @@ public class FarSideAuto extends DecodeAuto {
     }
 
     @Autonomous(name = "Far, Blue - Shoot 9")
+    @Disabled
     public static class FarSideAutoBlueAlliance extends FarSideAuto {
         public FarSideAutoBlueAlliance() {
             super(Alliance.BLUE);
@@ -44,11 +48,11 @@ public class FarSideAuto extends DecodeAuto {
     public void initialize() {
         // Line up for first shot
         start = drive.actionBuilder(beginPose, poseMap())
-                .waitSeconds(1.0)
                 .setReversed(false)
                 .setTangent(180)
                 // adjusted from 160 deg... First shots too far left for some reason - adjusting...
                 .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
+                .waitSeconds(1.5)
                 .endTrajectory();
 
         // Pick up closest line of artifacts
@@ -99,11 +103,11 @@ public class FarSideAuto extends DecodeAuto {
                         shooter.setRpmAction(SHOOTER_RPM_TARGET),
                         new SleepAction(0.5),
                         start.build(),
-                        shootingActionSequence(),
+                        shootingActionSequence(true),
                         pickUpBackRow.build(),
-                        shootingActionSequence(),
+                        shootingActionSequence(true),
                         pickUpLoadingZone.build(),
-                        shootingActionSequence(),
+                        shootingActionSequence(true),
                         parkOutsideLaunchZone.build()
                 )
             )

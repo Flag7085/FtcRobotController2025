@@ -7,7 +7,7 @@ public class GobildaIndicatorLight {
 
     public enum Color {
         YELLOW_GREEN(0.4),
-        RED(0.277),
+        RED(0.287),
         YELLOW(0.388),
         GREEN(0.5),
         BLUE(0.611),

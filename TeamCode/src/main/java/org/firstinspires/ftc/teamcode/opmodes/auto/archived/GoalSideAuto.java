@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.auto;
+package org.firstinspires.ftc.teamcode.opmodes.auto.archived;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -8,11 +8,13 @@ import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.opmodes.Alliance;
+import org.firstinspires.ftc.teamcode.opmodes.auto.DecodeAuto;
 
-@Config
-public class GoalSideWithGateAuto extends DecodeAuto {
+//@Config
+public class GoalSideAuto extends DecodeAuto {
     public static double SHOOTER_RPM_TARGET = 2800;
 
     TrajectoryActionBuilder start;
@@ -20,20 +22,22 @@ public class GoalSideWithGateAuto extends DecodeAuto {
     TrajectoryActionBuilder pickUpSecondRow;
     TrajectoryActionBuilder parkOutsideLaunchZone;
 
-    protected GoalSideWithGateAuto(Alliance alliance) {
-        super(alliance, new Pose2d(-50, 50, Math.toRadians(126.5)));
+    protected GoalSideAuto(Alliance alliance) {
+        super(alliance, new Pose2d(-63, 41, Math.toRadians(180)));
     }
 
-    @Autonomous(name = "Goal with gate, Red - Shoot 9")
-    public static class GoalSideWithGateAutoRedAlliance extends GoalSideWithGateAuto {
-        public GoalSideWithGateAutoRedAlliance() {
+    @Autonomous(name = "Goal, Red - Shoot 9")
+    @Disabled
+    public static class GoalSideAutoRedAlliance extends GoalSideAuto {
+        public GoalSideAutoRedAlliance() {
             super(Alliance.RED);
         }
     }
 
-    @Autonomous(name = "Goal with gate, Blue - Shoot 9")
-    public static class GoalSideWithGateAutoBlueAlliance extends GoalSideWithGateAuto {
-        public GoalSideWithGateAutoBlueAlliance() {
+    @Autonomous(name = "Goal, Blue - Shoot 9")
+    @Disabled
+    public static class GoalSideAutoBlueAlliance extends GoalSideAuto {
+        public GoalSideAutoBlueAlliance() {
             super(Alliance.BLUE);
         }
     }
@@ -50,20 +54,14 @@ public class GoalSideWithGateAuto extends DecodeAuto {
         pickUpFirstRow = start.fresh()
                 // Line up for intake
                 .setReversed(true)
-                // Go pick up first line of Artifacts
                 .splineToLinearHeading(new Pose2d(-12, 24, Math.toRadians(90)), Math.toRadians(0))
                 .setReversed(false)
                 // Intake
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
-                // .lineToX()
-                // Go to the gate
-                .setReversed(true)
-                .splineToLinearHeading(new Pose2d(-4, 60, Math.toRadians(180)), Math.toRadians(90))
-                .waitSeconds(3.5)
+
                 // Line up and shoot
-                .setTangent(Math.toRadians(-90))
                 .setReversed(true)
                 .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
                 .endTrajectory();
@@ -77,15 +75,14 @@ public class GoalSideWithGateAuto extends DecodeAuto {
                 .afterDisp(0.0, intake.startIntakeAction()) // Right at the beginning
                 .afterDisp(28.0, intake.stopIntakeAction()) // Right at the end
                 .lineToY(52, (pose2dDual, posePath, v) -> 10)
-
+                // Line up and shoot
                 .setReversed(true)
                 .splineToLinearHeading(new Pose2d(-30, 30, Math.toRadians(135)),  Math.toRadians(180))
                 .endTrajectory();
 
         parkOutsideLaunchZone = pickUpSecondRow.fresh()
-                //Go park to the side near goal
+                // Go park to the side near goal
                 .setReversed(false)
-
                 .setTangent(Math.toRadians(60))
                 .splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
                 .endTrajectory();
