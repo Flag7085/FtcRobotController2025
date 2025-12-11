@@ -118,6 +118,28 @@ public class MeepMeepTesting {
                 .waitSeconds(0.5)
                 .build();
     }
+
+    public static Action buildGoalSideJustLeave(RoadRunnerBotEntity bot) {
+        return bot
+                .getDrive()
+                //.actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
+                .actionBuilder(new Pose2d(-50, 50, Math.toRadians(126.5)))
+                .strafeToLinearHeading(new Vector2d(-30, 56), Math.toRadians(180), (pose2dDual, posePath, v) -> 20)
+                .build();
+    }
+
+    public static Action buildGoalSideJustPreloads(RoadRunnerBotEntity bot) {
+        return bot
+                .getDrive()
+                //.actionBuilder(new Pose2d(-63, 30, Math.toRadians(180)))
+                .actionBuilder(new Pose2d(-50, 50, Math.toRadians(126.5)))
+                .setReversed(true)
+                .strafeToLinearHeading(new Vector2d(-25, 25), Math.toRadians(135))
+                .waitSeconds(1.0)
+                .strafeToLinearHeading(new Vector2d(-30, 56), Math.toRadians(180), (pose2dDual, posePath, v) -> 20)
+                .build();
+    }
+
     public static Action buildGoalSideAutoWithGate(RoadRunnerBotEntity bot) {
         return bot
                 .getDrive()
@@ -279,6 +301,37 @@ public class MeepMeepTesting {
 
     }
 
+    public static Action buildFarSideJustPreloads(RoadRunnerBotEntity bot) {
+        // Line up to shoot
+        return bot
+                .getDrive()
+                .actionBuilder(new Pose2d(62, 18, Math.toRadians(180)))
+
+                // Line up to shoot
+                .setReversed(false)
+                .setTangent(180)
+                // adjusted from 160 deg... First shots too far left for some reason - adjusting...
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
+                .waitSeconds(1.5)
+
+                // Pew pew pew
+                .waitSeconds(1.2)
+
+                .strafeToLinearHeading(new Vector2d(61, 38), Math.toRadians(180))
+                .build();
+
+    }
+
+    public static Action buildFarSideJustLeave(RoadRunnerBotEntity bot) {
+        // Line up to shoot
+        return bot
+                .getDrive()
+                .actionBuilder(new Pose2d(62, 18, Math.toRadians(180)))
+                .strafeTo(new Vector2d(61, 38))
+                .build();
+
+    }
+
     public static Action build12ArtifactCloseAuto(RoadRunnerBotEntity bot) {
         return bot
                 // Pre-loaded
@@ -412,11 +465,15 @@ public class MeepMeepTesting {
 
         myBot.runAction(
                 //buildFarSideAuto1(myBot)
-                buildFarSideAuto2(myBot)
+                //buildFarSideAuto2(myBot)
+                //buildFarSideJustLeave(myBot)
+                //buildFarSideJustPreloads(myBot)
                 //buildGoalSideAutoStates(myBot)
                 //buildGoalSideAutoWithGate(myBot)
                 //build12ArtifactCloseAuto(myBot)
                 //buildGoalSideAuto1(myBot)
+                //buildGoalSideJustLeave(myBot)
+                buildGoalSideJustPreloads(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)

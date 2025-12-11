@@ -25,9 +25,18 @@ public class GoalSideAutoStates extends DecodeAuto {
     TrajectoryActionBuilder pickUpSecondRow;
     TrajectoryActionBuilder pickUpThirdRow;
     TrajectoryActionBuilder parkOutsideLaunchZone;
+    TrajectoryActionBuilder parkOutsideLaunchZoneNearGoal;
+    TrajectoryActionBuilder justLeaveAction;
 
+    // Skip the back row of artifacts, only get the front two rows
     boolean onlyDoNine = false;
+    // Don't open the gate after picking up the first row
     boolean skipTheGate = false;
+    // Setting this overrides everything except justLeave - if true, then no pickups
+    // and robot only shoots the pre-loads
+    boolean justPreloads = false;
+    // Setting this overrides everything else - if true, the robot just leaves the line
+    boolean justLeave = false;
 
     protected GoalSideAutoStates(Alliance alliance) {
         super(alliance, new Pose2d(-50, 50, Math.toRadians(126.5)));
@@ -43,45 +52,95 @@ public class GoalSideAutoStates extends DecodeAuto {
         this.skipTheGate = skipTheGate;
     }
 
-    @Autonomous(name = "Goal, Red - Shoot 12 + Gate", group = "Red")
+    //////////////////////////////////////////////
+    //
+    // Primary Autos
+    //
+    //////////////////////////////////////////////
+
+    @Autonomous(name = "Goal, Red - Shoot 12 + Gate", group = "Red", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoRedAlliance extends GoalSideAutoStates {
         public GoalSideAutoRedAlliance() {
             super(Alliance.RED, false);
         }
     }
 
-    @Autonomous(name = "Goal, Blue - Shoot 12 + Gate", group = "Blue")
+    @Autonomous(name = "Goal, Blue - Shoot 12 + Gate", group = "Blue", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoBlueAlliance extends GoalSideAutoStates {
         public GoalSideAutoBlueAlliance() {
             super(Alliance.BLUE, false);
         }
     }
 
-    @Autonomous(name = "Goal, Red - Shoot 9 + Gate", group = "Red")
+    //////////////////////////////////////////////
+    //
+    // Auto variations - sliced and diced
+    //
+    //////////////////////////////////////////////
+
+    @Autonomous(name = "Goal, Red - Shoot 9 + Gate", group = "Red", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoNineRedAlliance extends GoalSideAutoStates {
         public GoalSideAutoNineRedAlliance() {
             super(Alliance.RED, true);
         }
     }
 
-    @Autonomous(name = "Goal, Blue - Shoot 9 + Gate", group = "Blue")
+    @Autonomous(name = "Goal, Blue - Shoot 9 + Gate", group = "Blue", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoNineBlueAlliance extends GoalSideAutoStates {
         public GoalSideAutoNineBlueAlliance() {
             super(Alliance.BLUE, true);
         }
     }
 
-    @Autonomous(name = "Goal, Red - Shoot 9", group = "Red")
+    @Autonomous(name = "Goal, Red - Shoot 9", group = "Red", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoNineNoGateRedAlliance extends GoalSideAutoStates {
         public GoalSideAutoNineNoGateRedAlliance() {
             super(Alliance.RED, true, true);
         }
     }
 
-    @Autonomous(name = "Goal, Blue - Shoot 9 ", group = "Blue")
+    @Autonomous(name = "Goal, Blue - Shoot 9 ", group = "Blue", preselectTeleOp = "Decode Teleop")
     public static class GoalSideAutoNineNoGateBlueAlliance extends GoalSideAutoStates {
         public GoalSideAutoNineNoGateBlueAlliance() {
             super(Alliance.BLUE, true, true);
+        }
+    }
+
+    //////////////////////////////
+    //
+    // Panic autos
+    //
+    //////////////////////////////
+
+    @Autonomous(name = "Goal, Red - Just Leave", group = "zzzPanic", preselectTeleOp = "Decode Teleop")
+    public static class GoalSideAutoJustLeaveRedAlliance extends GoalSideAutoStates {
+        public GoalSideAutoJustLeaveRedAlliance() {
+            super(Alliance.RED);
+            this.justLeave = true;
+        }
+    }
+
+    @Autonomous(name = "Goal, Blue - Just Leave", group = "zzzPanic", preselectTeleOp = "Decode Teleop")
+    public static class GoalSideAutoJustLeaveBlueAlliance extends GoalSideAutoStates {
+        public GoalSideAutoJustLeaveBlueAlliance() {
+            super(Alliance.BLUE);
+            this.justLeave = true;
+        }
+    }
+
+    @Autonomous(name = "Goal, Red - Just Preloads", group = "zzzPanic", preselectTeleOp = "Decode Teleop")
+    public static class GoalSideAutoJustPreloadsRedAlliance extends GoalSideAutoStates {
+        public GoalSideAutoJustPreloadsRedAlliance() {
+            super(Alliance.RED);
+            this.justPreloads = true;
+        }
+    }
+
+    @Autonomous(name = "Goal, Blue - Just Preloads", group = "zzzPanic", preselectTeleOp = "Decode Teleop")
+    public static class GoalSideAutoJustPreloadsBlueAlliance extends GoalSideAutoStates {
+        public GoalSideAutoJustPreloadsBlueAlliance() {
+            super(Alliance.BLUE);
+            this.justPreloads = true;
         }
     }
 
@@ -170,11 +229,19 @@ public class GoalSideAutoStates extends DecodeAuto {
 
         
         parkOutsideLaunchZone = pickUpThirdRow.fresh()
-                // Go park to the side near goal
+                // Go park to the side near the Gate
                 .setReversed(false)
                 //.setTangent(Math.toRadians(60))
                 //.splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
                 .strafeToLinearHeading(new Vector2d(4, 48), Math.toRadians(0))
+                .endTrajectory();
+
+        parkOutsideLaunchZoneNearGoal = start.fresh()
+                .strafeToLinearHeading(new Vector2d(-30, 56), Math.toRadians(180), (pose2dDual, posePath, v) -> 20)
+                .endTrajectory();
+
+        justLeaveAction = drive.actionBuilder(beginPose, poseMap())
+                .strafeToLinearHeading(new Vector2d(-30, 56), Math.toRadians(180), (pose2dDual, posePath, v) -> 20)
                 .endTrajectory();
     }
 
@@ -182,24 +249,36 @@ public class GoalSideAutoStates extends DecodeAuto {
     public void runAuto() {
 
         List<Action> actions = new ArrayList<>();
-        actions.add(shooter.setRpmAction(SHOOTER_RPM_TARGET));
-        actions.add(start.build());
-        actions.add(shootingActionSequence(true));
 
-        if (skipTheGate) {
-            actions.add(pickUpFirstRowNoGate.build());
-        } else {
-            actions.add(pickUpFirstRow.build());
-        }
-
-        actions.add(shootingActionSequence(true));
-        actions.add(pickUpSecondRow.build());
-        actions.add(shootingActionSequence(true));
-        if (!onlyDoNine) {
-            actions.add(pickUpThirdRow.build());
+        if (justLeave) {
+            actions.add(justLeaveAction.build());
+        } else if (justPreloads) {
+            actions.add(shooter.setRpmAction(SHOOTER_RPM_TARGET));
+            actions.add(start.build());
             actions.add(shootingActionSequence(true));
+            actions.add(parkOutsideLaunchZoneNearGoal.build());
         } else {
-            actions.add(parkOutsideLaunchZone.build());
+            actions.add(shooter.setRpmAction(SHOOTER_RPM_TARGET));
+            actions.add(start.build());
+            actions.add(shootingActionSequence(true));
+
+            if (skipTheGate) {
+                actions.add(pickUpFirstRowNoGate.build());
+            } else {
+                actions.add(pickUpFirstRow.build());
+            }
+
+            actions.add(shootingActionSequence(true));
+            actions.add(pickUpSecondRow.build());
+            actions.add(shootingActionSequence(true));
+            if (!onlyDoNine) {
+                // This lands fully inside launch zone, not on the line
+                // so we don't need to go park after this (and won't have time).
+                actions.add(pickUpThirdRow.build());
+                actions.add(shootingActionSequence(true));
+            } else {
+                actions.add(parkOutsideLaunchZone.build());
+            }
         }
 
         Actions.runBlocking(
