@@ -189,6 +189,23 @@ public class FarSideV2Auto extends DecodeAuto {
                 .waitSeconds(1.5)
                 .endTrajectory();
 
+
+        // Pick up closest line of artifacts
+        pickUpBackRow = start.fresh()
+                .setReversed(false)
+                //.splineTo(new Vector2d(36, 24), Math.toRadians(90))
+                .setTangent(Math.toRadians(180))
+                .splineToSplineHeading(new Pose2d(36, 24, Math.toRadians(90)), Math.toRadians(90))
+
+                // Intake
+                .afterDisp(0.0, runIntake()) // Right at the beginning
+                .afterDisp(28.0, stopIntake()) // Right at the end
+                .lineToY(52, (pose2dDual, posePath, v) -> 15)
+                // Line up to shoot
+                .setReversed(true)
+                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
+                .endTrajectory();
+
         // Pick up artifacts from loading zone
         pickUpLoadingZone = pickUpBackRow.fresh()
                 .setReversed(false)
@@ -206,21 +223,6 @@ public class FarSideV2Auto extends DecodeAuto {
                 .splineToSplineHeading(new Pose2d(56, 16, Math.toRadians(155)), Math.toRadians(-80))
                 .endTrajectory();
 
-        // Pick up closest line of artifacts
-        pickUpBackRow = start.fresh()
-                .setReversed(false)
-                //.splineTo(new Vector2d(36, 24), Math.toRadians(90))
-                .setTangent(Math.toRadians(180))
-                .splineToSplineHeading(new Pose2d(36, 24, Math.toRadians(90)), Math.toRadians(90))
-
-                // Intake
-                .afterDisp(0.0, runIntake()) // Right at the beginning
-                .afterDisp(28.0, stopIntake()) // Right at the end
-                .lineToY(52, (pose2dDual, posePath, v) -> 15)
-                // Line up to shoot
-                .setReversed(true)
-                .splineTo(new Vector2d(56, 16), Math.toRadians(-20))
-                .endTrajectory();
 
         // Assume gate was opened - go try to pick up more from the loading zone
         pickUpLoadingZoneAfterGate = pickUpBackRow.fresh()
