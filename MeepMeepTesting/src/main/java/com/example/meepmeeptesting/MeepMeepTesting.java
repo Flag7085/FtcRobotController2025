@@ -345,6 +345,28 @@ public class MeepMeepTesting {
                 .build();
         }
 
+    public static Action build12ArtifactBackAuto (RoadRunnerBotEntity bot) {
+        return bot
+
+                .getDrive()
+                .actionBuilder(new Pose2d(61, 20, Math.toRadians(180)))
+
+                // pre-load
+
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
+                .waitSeconds(3.5)
+
+                // middle spike mark
+
+                .splineToLinearHeading( new Pose2d(13, 20, Math.toRadians(90)), Math.toRadians(180))
+                .setReversed(true)
+                .lineToY(56)
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
+
+                .build();
+    }
+
         public static void main(String[] args) {
 
         MeepMeep meepMeep = new MeepMeep(800);
@@ -357,8 +379,9 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
+                build12ArtifactBackAuto(myBot)
                 //buildFarSideAuto1(myBot)
-                buildGoalSIdeAutoStates(myBot)
+                //buildGoalSIdeAutoStates(myBot)
                 //buildGoalSideAutoWithGate(myBot)
                 //build12ArtifactCloseAuto(myBot)
                 //buildGoalSideAuto1(myBot)
