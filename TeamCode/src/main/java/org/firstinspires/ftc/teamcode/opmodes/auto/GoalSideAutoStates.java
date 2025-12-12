@@ -207,7 +207,7 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up and shoot
                 .setReversed(true)
-                .setTangent(Math.toRadians(225))
+                .setTangent(Math.toRadians(-120))
                 .splineToLinearHeading(new Pose2d(-25, 25, Math.toRadians(135)),  Math.toRadians(180))
                 .endTrajectory();
 
@@ -233,7 +233,7 @@ public class GoalSideAutoStates extends DecodeAuto {
                 .setReversed(false)
                 //.setTangent(Math.toRadians(60))
                 //.splineToLinearHeading(new Pose2d(-24, 56, Math.toRadians(180)), Math.toRadians(90))
-                .strafeToLinearHeading(new Vector2d(4, 48), Math.toRadians(0))
+                .strafeToLinearHeading(new Vector2d(4, 46), Math.toRadians(0))
                 .endTrajectory();
 
         parkOutsideLaunchZoneNearGoal = start.fresh()

@@ -109,6 +109,21 @@ public class FarSideV2Auto extends DecodeAuto {
         }
     }
 
+
+    @Autonomous(name = "Far, Red - Shoot 12", group = "Red", preselectTeleOp = "Decode Teleop")
+    public static class FarSideV2ShootTwelveAutoRedAlliance extends FarSideV2Auto {
+        public FarSideV2ShootTwelveAutoRedAlliance() {
+            super(Alliance.RED, true, false, true, false);
+        }
+    }
+
+    @Autonomous(name = "Far, Blue - Shoot 12", group = "Blue", preselectTeleOp = "Decode Teleop")
+    public static class FarSideV2ShootTwleveAutoBlueAlliance extends FarSideV2Auto {
+        public FarSideV2ShootTwleveAutoBlueAlliance() {
+            super(Alliance.BLUE, true, false, true, false);
+        }
+    }
+
     @Autonomous(name = "Far, Red - Shoot 6 + G + G", group = "Red", preselectTeleOp = "Decode Teleop")
     public static class FarSideV2SkipBackRowAutoRedAlliance extends FarSideV2Auto {
         public FarSideV2SkipBackRowAutoRedAlliance() {
@@ -240,7 +255,16 @@ public class FarSideV2Auto extends DecodeAuto {
                 .endTrajectory();
 
         pickUpMiddleRow = pickUpBackRow.fresh()
-                // TODO - define this and add it into the if branch below
+                .setTangent(Math.toRadians(180))
+                .splineToLinearHeading( new Pose2d(13, 20, Math.toRadians(90)), Math.toRadians(180))
+                // Intake
+                .setTangent(Math.toRadians(90))
+                .afterDisp(0.0, runIntake()) // Right at the beginning
+                .afterDisp(28.0, stopIntake()) // Right at the end
+                .lineToY(52, (pose2dDual, posePath, v) -> 15)
+                //.lineToY(56)
+                .setReversed(true)
+                .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(160)), 0)
                 .endTrajectory();
 
         // Move out of launch zone
@@ -285,9 +309,8 @@ public class FarSideV2Auto extends DecodeAuto {
             }
 
             if (addMiddleRowArtifacts) {
-                // TODO - needs to be implemented
-                // actions.add(pickUpMiddleRow.build());
-                // actions.add(shootingActionSequence(true));
+                actions.add(pickUpMiddleRow.build());
+                actions.add(shootingActionSequence(true));
             }
 
             if (!skipGatePickup) {

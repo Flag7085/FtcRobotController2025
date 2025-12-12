@@ -78,7 +78,7 @@ public class DecodeTeleop extends OpMode {
     public static double SHOOTER_SPEED_RPM = 3000;
     public static boolean USE_FIXED_SHOOTER_RPM = false;
 
-    public static double DRIVE_SPEED = 0.8;
+    public static double DRIVE_SPEED = 0.7;
     public static double DRIVE_SLOW_SPEED = 0.2;
     public static double TURN_SPEED = 0.6;
 

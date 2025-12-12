@@ -423,7 +423,8 @@ public class MeepMeepTesting {
                 .lineToY(52, (pose2dDual, posePath, v) -> 15)
                 // Line up and shoot
                 .setReversed(true)
-                .setTangent(Math.toRadians(225))
+                //.setTangent(Math.toRadians(225))
+                .setTangent(Math.toRadians(-120))
                 .splineToLinearHeading(new Pose2d(-25, 25, Math.toRadians(135)),  Math.toRadians(180))
 
                 .waitSeconds(1.5)
@@ -464,9 +465,9 @@ public class MeepMeepTesting {
                 .waitSeconds(3.5)
 
                 // middle spike mark
-
+                .setTangent(Math.toRadians(180))
                 .splineToLinearHeading( new Pose2d(13, 20, Math.toRadians(90)), Math.toRadians(180))
-                .setReversed(true)
+                .setTangent(Math.toRadians(90))
                 .lineToY(56)
                 .setReversed(true)
                 .splineToLinearHeading(new Pose2d(56, 16, Math.toRadians(152.5)), 0)
@@ -486,18 +487,18 @@ public class MeepMeepTesting {
                 .build();
 
         myBot.runAction(
-                build12ArtifactBackAuto(myBot)
+                //build12ArtifactBackAuto(myBot)
                 //buildFarSideAuto1(myBot)
 
                 //buildFarSideAuto2(myBot)
                 //buildFarSideJustLeave(myBot)
                 //buildFarSideJustPreloads(myBot)
-                //buildGoalSideAutoStates(myBot)
+                buildGoalSideAutoStates(myBot)
                 //buildGoalSideAutoWithGate(myBot)
                 //build12ArtifactCloseAuto(myBot)
                 //buildGoalSideAuto1(myBot)
                 //buildGoalSideJustLeave(myBot)
-                buildGoalSideJustPreloads(myBot)
+                //buildGoalSideJustPreloads(myBot)
         );
 
         meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_JUICE_DARK)
